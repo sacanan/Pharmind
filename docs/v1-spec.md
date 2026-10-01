@@ -1,0 +1,74 @@
+# V1 spesifikasyonu (taslak)
+
+> Durum: **taslak**. Çerçeve, planlama konuşmasından çıkarıldı. Kullanıcının kendi notlarıyla çatıştırılıp netleştirilecek. `[?]` işaretli yerler açık sorudur.
+
+## 1. Ürün mimarisi
+
+Dört modül ayrı uygulamalar değil, **aynı bilginin dört kullanım düzeyidir**; hepsi tek bir **kavram grafiği** üzerine kurulur.
+
+- **Kavramlar:** etken madde, endikasyon, mekanizma, etkileşim, kırmızı bayrak, cilt problemi, danışmanlık noktası. Her kavramın bir **mastery** skoru vardır.
+- **KNOW:** kavramları kart olarak çalıştırır (FSRS).
+- **THINK / ACT:** kavramları bir vakada birleştirir. THINK yavaş ve gerekçeli, ACT hızlı. Aynı vaka motorunu kullanırlar. (V1'de yalnızca THINK.)
+- **BUILD:** kavramları üretim görevinde sınar. (V2+)
+- Her cevap ilgili kavramların mastery skorunu günceller; Daily 5 bu skorlara göre seçilir.
+
+Learning DNA ayrı bir özellik değil, bu grafiğin çıktısıdır. V1'de **mastery haritası** olarak başlar.
+
+## 2. Core loop (5 dakika)
+
+1. **Açılış (0:00):** tek ekran, tek eylem: "Bugünkü oturum".
+2. **Isınma (~2 dk):** 5 kart; her cevaptan önce güven seçimi (emin / kararsız / tahmin).
+3. **Günün vakası (~2,5 dk):** kısa bir hasta, 3–4 karar noktası, soru bütçesi.
+4. **Kapanış (~30 sn):** "Tezgahta ne derdin?" tek cümlelik danışmanlık özeti ve yarına bir kanca.
+5. **Bitiş:** oturum sonludur.
+
+## 3. V1 kapsamı
+
+**Konu alanı:** yalnızca **dermokozmetik** (mevcut kartlar var, ticari değeri yüksek).
+
+| Özellik | Not |
+|---|---|
+| Daily 5 | FSRS aralıklı tekrar + güven seçimi |
+| Günün vakası | Elle yazılmış, "elmas yapısı" (dallanıp aynı noktada birleşen), sınırlı dallanma |
+| Soru bütçesi | Vakada hastaya sınırlı sayıda soru sorulur; hangi bilgiyi istediği puanlanır |
+| Mastery haritası | Kavram bazında renkli harita |
+| Haftalık streak | Haftalık hedef + dondurma hakkı |
+| "Cevabı açıkla" | Önceden hazırlanmış, denetlenmiş açıklamalar |
+| "Hasta geri geldi" | Dünkü vakanın sonucu ertesi gün döner `[?]` V1'e mi V2'ye mi kesin değil |
+
+## 4. V1 dışı (bilerek yok)
+
+AI Patient, canlı AI içerik üretimi, leaderboard, time attack, Pharmacy Simulator, haber/bilimsel içerik modülü, Routine/Supplement/Magistral Builder, diğer konu alanları, eczane işletme araçları.
+
+## 5. Sonraki sürümler
+
+- **V2:** yanlış cevap analizi, kişiselleştirilmiş rota, ACT modu (hızlı vaka), Routine Builder, AI ile vaka *taslağı* (yayın öncesi onaylı)
+- **V3:** diğer konu alanları, eczane ekibi modu, Supplement ve Magistral Builder, haber modülü (editör kontrollü)
+- **V4+:** Pharmacy Simulator, işletme araçları
+
+## 6. Signature feature
+
+**"Hasta geri geldi"** (vaka sonucunun ertesi gün dönmesi) ve vakada **soru bütçesi**. Detay ve içerik maliyeti netleşecek.
+
+## 7. İlerleme sistemi
+
+- **Mastery:** kavram bazında, asıl ölçü
+- **XP / level:** yalnızca görsel geri bildirim
+- **Streak:** haftalık hedef, dondurma hakkı
+- **Mastery haritası:** Learning DNA'nın V1 hali
+
+## 8. Riskler
+
+1. **İçerik darboğazı:** dallanan vakalar üstel maliyet getirir; çözüm "elmas yapısı".
+2. **Tıbbi sorumluluk:** AI üretimi içerik yayından önce denetlenir.
+3. **Sponsorluk:** içerik ile sponsor arasında net ayrım olmalı; ilaç tanıtım kuralları Türkiye'de hassastır.
+4. **Özellik şişmesi:** V1'de her özellik ya alışkanlığı ya da öğrenmeyi doğrudan artırmalı.
+5. **Güncellik:** her karta kaynak ve son gözden geçirme tarihi konur.
+6. **İsim:** "Pharmind" çalışma adıdır. Alman bir yayıncı (pharmind dergisi) aynı adı kullanıyor; marka riski değerlendirilmeden logo ve tescil yatırımı yapılmaz.
+
+## 9. Açık sorular
+
+- `[?]` İçerik şeması: kavram / kart / vaka ilişkisi (Excel kartlarına bakılarak çıkarılacak)
+- `[?]` Mobil teknoloji: Expo mu Flutter mı (öneri: Expo)
+- `[?]` Arka uç: Supabase mi, başka bir şey mi
+- `[?]` Gelir modeli ve sponsorluk zamanlaması
