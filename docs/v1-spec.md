@@ -72,3 +72,11 @@ AI Patient, canlı AI içerik üretimi, leaderboard, time attack, Pharmacy Simul
 - `[?]` Mobil teknoloji: Expo mu Flutter mı (öneri: Expo)
 - `[?]` Arka uç: Supabase mi, başka bir şey mi
 - `[?]` Gelir modeli ve sponsorluk zamanlaması
+
+## Mastery tanımı (uygulandı)
+
+- **Kart mastery'si** = `min(1, stability / 30 gün) × şu anki hatırlanma olasılığı` (FSRS). Hedef gün sayısı `MASTERY_TARGET_STABILITY_DAYS` ile ayarlanır.
+- **Kavram mastery'si** = kavramı test eden kartların ortalaması; hiç görülmeyen kart 0 sayılır.
+- Sonuç: yanlış cevap ~0, tek seferlik doğru cevap düşük, aralıklı tekrarlarla yükselir, tekrar edilmezse zamanla düşer.
+- FSRS notu: doğru ve emin → Good; doğru ama kararsız/tahmin → Hard; yanlış → Again; Easy V1'de kullanılmaz.
+- `[?]` 30 gün hedefi ilk tahmin; gerçek kullanımla ayarlanacak.
