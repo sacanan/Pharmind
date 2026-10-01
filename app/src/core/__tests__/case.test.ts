@@ -1,14 +1,18 @@
 import { demoCase } from '../../content/demo-case';
 import {
   applyCase,
+  applyFollowUp,
   askQuestion,
   caseDoneToday,
+  caseTier,
   cellForRating,
   choose,
   decisionCardId,
   decisionCards,
   emptyRun,
+  followUpCardId,
   isFinished,
+  pendingFollowUp,
   pickTodaysCase,
   questionsLeft,
   summarizeCase,
@@ -104,11 +108,13 @@ describe('applyCase ve mastery', () => {
   const dcards = decisionCards([c]);
 
   it('karar noktaları kart gibi kavramlara bağlanır', () => {
-    expect(dcards).toHaveLength(3);
+    // 3 vaka kararı + 1 geri dönüş kararı (en sonda)
+    expect(dcards).toHaveLength(4);
     expect(dcards[0].id).toBe(decisionCardId(c.id, 'd1'));
     expect(dcards[2].conceptIds).toEqual(['demo-a', 'demo-c']);
+    expect(dcards[3].id).toBe(followUpCardId(c.id));
     // doğru indeks "uygun" seçenektir
-    expect(dcards.map((d) => d.correctIndex)).toEqual(BEST);
+    expect(dcards.slice(0, 3).map((d) => d.correctIndex)).toEqual(BEST);
   });
 
   it('girdiyi değiştirmez, sonucu kaydeder, günlük hedefe ve geçmişe dokunmaz', () => {
@@ -119,6 +125,7 @@ describe('applyCase ve mastery', () => {
     expect(after.caseResults[c.id]).toMatchObject({ askedIds: ['q1', 'q2'], choices: BEST });
     expect(after.history).toEqual([]);
     expect(after.completedDays).toEqual([]);
+    // geri dönüş kararı hasta dönene kadar işlenmez
     expect(Object.keys(after.cards)).toHaveLength(3);
   });
 
@@ -168,6 +175,99 @@ describe('günün vakası', () => {
     p = applyCase(p, other, play(BEST), new Date(NOW.getTime() + DAY));
     const later = new Date(NOW.getTime() + 3 * DAY);
     expect(pickTodaysCase(cases, p, later)).toEqual({ case: c, done: false });
+  });
+});
+
+describe('hasta geri geldi', () => {
+  const NEXT = new Date(NOW.getTime() + DAY);
+  const done = (choices: number[], at: Date = NOW) => applyCase(emptyProgress(), c, play(choices), at);
+
+  it('kararların ortalamasına göre varyant belirlenir (uygun 2, kabul 1, uygun değil 0)', () => {
+    // demo dereceleri: d1 [uygun, kabul, değil], d2 [kabul, değil, uygun], d3 [değil, uygun, kabul]
+    expect(caseTier(c, play(BEST))).toBe('iyi'); // 2+2+2 = ort. 2
+    expect(caseTier(c, play([0, 2, 2]))).toBe('iyi'); // 2+2+1 = ort. 1,67
+    expect(caseTier(c, play([1, 0, 2]))).toBe('karisik'); // 1+1+1 = ort. 1
+    expect(caseTier(c, play([0, 0, 2]))).toBe('karisik'); // 2+1+1 = ort. 1,33
+    expect(caseTier(c, play([0, 1, 0]))).toBe('zayif'); // 2+0+0 = ort. 0,67
+    expect(caseTier(c, play(WORST))).toBe('zayif'); // 0+0+0
+  });
+
+  it('sınırlar: 1,5 iyi, 0,75 karışık', () => {
+    // İki kararlı bir vaka ile sınır değerleri: [uygun, kabul] = 1,5 ; [kabul, değil] = 0,5
+    const two: PatientCase = { ...c, decisions: c.decisions.slice(0, 2) };
+    // d1: uygun(0) ve d2: kabul(0) -> 1,5
+    expect(caseTier(two, { askedIds: [], choices: [0, 0] })).toBe('iyi');
+    // d1: kabul(1) ve d2: değil(1) -> 0,5
+    expect(caseTier(two, { askedIds: [], choices: [1, 1] })).toBe('zayif');
+    // hiç karar yoksa zayıf
+    expect(caseTier(c, emptyRun())).toBe('zayif');
+  });
+
+  it('hasta aynı gün dönmez, ertesi gün döner', () => {
+    const p = done(BEST);
+    expect(pendingFollowUp([c], p, new Date(NOW.getTime() + 1000))).toBeNull();
+    expect(pendingFollowUp([c], p, NEXT)?.case.id).toBe(c.id);
+  });
+
+  it('kaçırılırsa kaybolmaz', () => {
+    const p = done(BEST);
+    expect(pendingFollowUp([c], p, new Date(NOW.getTime() + 9 * DAY))?.case.id).toBe(c.id);
+  });
+
+  it('dönüş varyantı vaka kararlarının kalitesini yansıtır', () => {
+    expect(pendingFollowUp([c], done(BEST), NEXT)?.tier).toBe('iyi');
+    expect(pendingFollowUp([c], done(WORST), NEXT)?.tier).toBe('zayif');
+  });
+
+  it('geri dönüş içeriği olmayan vaka için hasta dönmez', () => {
+    const noFollow: PatientCase = { ...c, id: 'x', followUp: undefined };
+    const p = applyCase(emptyProgress(), noFollow, play(BEST), NOW);
+    expect(pendingFollowUp([noFollow], p, NEXT)).toBeNull();
+  });
+
+  it('cevaplandıktan sonra bekleyen hasta kalmaz, kayıt tutulur, geçmişe ve hedefe dokunmaz', () => {
+    const p = done(BEST);
+    const after = applyFollowUp(p, c, 1, NEXT);
+    expect(after.caseResults[c.id].followUp).toEqual({ choice: 1, at: NEXT.toISOString() });
+    expect(pendingFollowUp([c], after, new Date(NEXT.getTime() + DAY))).toBeNull();
+    expect(after.history).toEqual([]);
+    expect(after.completedDays).toEqual([]);
+    expect(after.cards[followUpCardId(c.id)]).toBeDefined();
+    // vakanın kendi kaydı bozulmaz
+    expect(after.caseResults[c.id].at).toBe(NOW.toISOString());
+    expect(after.caseResults[c.id].choices).toEqual(BEST);
+  });
+
+  it('iki kez cevaplanamaz, oynanmamış vaka ve geçersiz seçim yok sayılır', () => {
+    const once = applyFollowUp(done(BEST), c, 1, NEXT);
+    expect(applyFollowUp(once, c, 0, NEXT)).toBe(once);
+    const fresh = emptyProgress();
+    expect(applyFollowUp(fresh, c, 1, NEXT)).toBe(fresh);
+    const p = done(BEST);
+    expect(applyFollowUp(p, c, 9, NEXT)).toBe(p);
+  });
+
+  it('geri dönüş kararı kavram mastery\'sine yansır', () => {
+    const dcards = decisionCards([c]);
+    const m = (p: ReturnType<typeof done>) => conceptMastery('demo-b', dcards, p, NEXT);
+    const base = done(BEST);
+    const good = applyFollowUp(base, c, 1, NEXT); // uygun
+    const bad = applyFollowUp(base, c, 2, NEXT); // uygunDegil
+    expect(m(good)).toBeGreaterThan(m(bad));
+  });
+
+  it('vaka tekrar oynanırsa eski geri dönüş cevabı silinir ve hasta yine döner', () => {
+    const first = applyFollowUp(done(BEST), c, 1, NEXT);
+    const later = new Date(NOW.getTime() + 5 * DAY);
+    const replay = applyCase(first, c, play(WORST), later);
+    expect(replay.caseResults[c.id].followUp).toBeUndefined();
+    expect(pendingFollowUp([c], replay, new Date(later.getTime() + DAY))?.tier).toBe('zayif');
+  });
+
+  it('geri dönüş cevabı kaydedilip geri okunur', () => {
+    const p = applyFollowUp(done(BEST), c, 1, NEXT);
+    const back = deserializeProgress(serializeProgress(p));
+    expect(back.caseResults[c.id].followUp).toEqual(p.caseResults[c.id].followUp);
   });
 });
 

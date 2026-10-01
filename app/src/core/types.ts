@@ -75,6 +75,16 @@ export interface CaseDecision {
   options: CaseOption[];
 }
 
+/** Vakadaki kararların genel kalitesi; hastanın geri dönüşünün hangi varyantla yazılacağını belirler. */
+export type CaseTier = 'iyi' | 'karisik' | 'zayif';
+
+/** Hasta ertesi gün geri geldiğinde: kısa anlatım (kararlara göre 3 varyant) ve tek yeni karar. */
+export interface CaseFollowUp {
+  /** Hastanın dönüşte anlattığı; kararların genel kalitesine göre */
+  returns: Record<CaseTier, string>;
+  decision: CaseDecision;
+}
+
 /** Günün vakası: kısa hasta, soru bütçesi, doğrusal 3 karar noktası ve sonuç. */
 export interface PatientCase {
   id: string;
@@ -86,6 +96,8 @@ export interface PatientCase {
   decisions: CaseDecision[];
   /** Vakanın kapanışı */
   outcome: string;
+  /** "Hasta geri geldi": yoksa vaka bununla ilgili bir şey göstermez. */
+  followUp?: CaseFollowUp;
   source: string;
   /** Son gözden geçirme tarihi, YYYY-MM-DD. */
   reviewedAt: string;
@@ -102,6 +114,8 @@ export interface CaseRun {
 export interface CaseResult extends CaseRun {
   /** ISO zaman damgası */
   at: string;
+  /** Hasta geri geldiyse seçilen seçenek ve zamanı; yoksa henüz cevaplanmadı. */
+  followUp?: { choice: number; at: string };
 }
 
 export interface Progress {

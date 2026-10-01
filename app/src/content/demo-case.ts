@@ -95,6 +95,38 @@ export const demoCase: PatientCase = {
     },
   ],
   outcome: '[DEMO] Vaka kapandı. Bu metin yer tutucudur.',
+  followUp: {
+    returns: {
+      iyi: '[DEMO] Hasta geri geldi ve durumunun iyi gittiğini söylüyor. Bu metin yer tutucudur.',
+      karisik: '[DEMO] Hasta geri geldi; durumu kısmen değişmiş. Bu metin yer tutucudur.',
+      zayif: '[DEMO] Hasta geri geldi ve durumunun kötüleştiğini söylüyor. Bu metin yer tutucudur.',
+    },
+    decision: {
+      id: 'f1',
+      prompt: '[DEMO] Hasta geri döndü: şimdi ne yaparsın?',
+      conceptIds: ['demo-b'],
+      options: [
+        {
+          text: 'Seçenek A',
+          rating: 'kabul',
+          rationale: '[DEMO] Bu seçenek "kabul edilebilir" olarak işaretlendi.',
+          consequence: '[DEMO] Hastanın durumu kısmen değişir.',
+        },
+        {
+          text: 'Seçenek B',
+          rating: 'uygun',
+          rationale: '[DEMO] Bu seçenek "uygun" olarak işaretlendi.',
+          consequence: '[DEMO] Hastanın durumu bu seçimle değişir.',
+        },
+        {
+          text: 'Seçenek C',
+          rating: 'uygunDegil',
+          rationale: '[DEMO] Bu seçenek "uygun değil" olarak işaretlendi; ne yapılması gerektiği gösterilir.',
+          consequence: '[DEMO] Hastanın durumu bu seçimle kötüleşir.',
+        },
+      ],
+    },
+  },
   source: 'Yer tutucu (tıbbi bilgi içermez)',
   reviewedAt: '2026-10-01',
   status: 'demo',

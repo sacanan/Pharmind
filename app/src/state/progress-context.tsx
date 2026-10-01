@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import { playableCards } from '../content';
-import { applyCase } from '../core/case';
+import { applyCase, applyFollowUp } from '../core/case';
 import { selectDaily } from '../core/daily';
 import { emptyProgress, reviewCard } from '../core/scheduling';
 import { loadProgress, saveProgress } from '../core/storage';
@@ -34,6 +34,8 @@ interface Store {
   finishSession: () => void;
   /** Vakayı tamamlar: karar kalitesi ilgili kavramların mastery'sine işlenir. */
   completeCase: (c: PatientCase, run: CaseRun) => void;
+  /** "Hasta geri geldi" kararını işler. */
+  completeFollowUp: (c: PatientCase, choice: number) => void;
   /** Yalnızca geliştirme için */
   resetAll: () => void;
 }
@@ -94,6 +96,13 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     [commit],
   );
 
+  const completeFollowUp = useCallback(
+    (c: PatientCase, choice: number) => {
+      commit(applyFollowUp(latest.current, c, choice, new Date()));
+    },
+    [commit],
+  );
+
   const resetAll = useCallback(() => {
     setSession(null);
     commit(emptyProgress());
@@ -108,9 +117,20 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       answer,
       finishSession,
       completeCase,
+      completeFollowUp,
       resetAll,
     }),
-    [ready, progress, session, startSession, answer, finishSession, completeCase, resetAll],
+    [
+      ready,
+      progress,
+      session,
+      startSession,
+      answer,
+      finishSession,
+      completeCase,
+      completeFollowUp,
+      resetAll,
+    ],
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

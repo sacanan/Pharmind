@@ -2,6 +2,7 @@ import { reviewCard } from './scheduling';
 import type {
   Card,
   CaseDecision,
+  CaseTier,
   CaseOption,
   CaseQuestion,
   CaseRun,
@@ -87,27 +88,38 @@ export function decisionCardId(caseId: string, decisionId: string): string {
   return `case:${caseId}:${decisionId}`;
 }
 
+function toCard(c: PatientCase, id: string, d: CaseDecision): Card {
+  return {
+    id,
+    conceptIds: d.conceptIds,
+    prompt: d.prompt,
+    options: d.options.map((o) => o.text),
+    correctIndex: Math.max(
+      0,
+      d.options.findIndex((o) => o.rating === 'uygun'),
+    ),
+    explanation: '',
+    source: c.source,
+    reviewedAt: c.reviewedAt,
+    status: c.status,
+  };
+}
+
+/** "Hasta geri geldi" kararının kart kimliği. */
+export function followUpCardId(caseId: string): string {
+  return `case:${caseId}:followup`;
+}
+
 /**
- * Vakanın karar noktaları, kavram mastery'sine katılan "kart"lardır. Günlük 5 seçimine girmezler;
- * yalnızca masteryMap'e verilen kart listesine eklenir.
+ * Vakanın karar noktaları (ve varsa geri dönüş kararı), kavram mastery'sine katılan "kart"lardır.
+ * Günlük 5 seçimine girmezler; yalnızca masteryMap'e verilen kart listesine eklenir.
+ * Sıra: önce vaka kararları, en sonda geri dönüş kararı.
  */
 export function decisionCards(cases: PatientCase[]): Card[] {
-  return cases.flatMap((c) =>
-    c.decisions.map((d) => ({
-      id: decisionCardId(c.id, d.id),
-      conceptIds: d.conceptIds,
-      prompt: d.prompt,
-      options: d.options.map((o) => o.text),
-      correctIndex: Math.max(
-        0,
-        d.options.findIndex((o) => o.rating === 'uygun'),
-      ),
-      explanation: '',
-      source: c.source,
-      reviewedAt: c.reviewedAt,
-      status: c.status,
-    })),
-  );
+  return cases.flatMap((c) => [
+    ...c.decisions.map((d) => toCard(c, decisionCardId(c.id, d.id), d)),
+    ...(c.followUp ? [toCard(c, followUpCardId(c.id), c.followUp.decision)] : []),
+  ]);
 }
 
 /**
@@ -121,7 +133,7 @@ export function applyCase(
   run: CaseRun,
   now: Date,
 ): Progress {
-  const cards = decisionCards([c]);
+  const cards = decisionCards([c]); // ilk c.decisions.length tanesi vaka kararlarıdır
   let next = progress;
   run.choices.forEach((choice, i) => {
     const card = cards[i];
@@ -171,4 +183,71 @@ export function pickTodaysCase(
     progress.caseResults[a.id].at.localeCompare(progress.caseResults[b.id].at),
   )[0];
   return { case: oldest, done: false };
+}
+
+const TIER_SCORE: Record<DecisionRating, number> = { uygun: 2, kabul: 1, uygunDegil: 0 };
+
+/**
+ * Kararların genel kalitesi: ortalama puan (uygun 2, kabul 1, uygun değil 0).
+ * 1,5 ve üzeri iyi, 0,75 ve üzeri karışık, altı zayıf.
+ */
+export function caseTier(c: PatientCase, run: CaseRun): CaseTier {
+  const scores = summarizeCase(c, run).decisions.map((d) => TIER_SCORE[d.option.rating]);
+  if (scores.length === 0) return 'zayif';
+  const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+  if (avg >= 1.5) return 'iyi';
+  return avg >= 0.75 ? 'karisik' : 'zayif';
+}
+
+/**
+ * Geri dönmeye hazır hasta: vaka tamamlanmış, geri dönüş içeriği var, henüz cevaplanmamış
+ * ve vakadan sonra en az bir gün geçmiş. Hasta kaçırılırsa kaybolmaz; en eski bekleyen önce gelir.
+ */
+export function pendingFollowUp(
+  cases: PatientCase[],
+  progress: Progress,
+  now: Date,
+): { case: PatientCase; tier: CaseTier } | null {
+  const today = dayKey(now);
+  const waiting = cases
+    .filter((c) => {
+      const r = progress.caseResults[c.id];
+      return !!c.followUp && !!r && !r.followUp && dayKey(new Date(r.at)) < today;
+    })
+    .sort((a, b) => progress.caseResults[a.id].at.localeCompare(progress.caseResults[b.id].at));
+  const c = waiting[0];
+  if (!c) return null;
+  return { case: c, tier: caseTier(c, progress.caseResults[c.id]) };
+}
+
+/**
+ * Geri dönüş kararını işler: karar kalitesi ilgili kavramların FSRS durumunu günceller ve
+ * cevap kaydedilir. Zaten cevaplanmışsa, vaka oynanmamışsa veya seçim geçersizse girdiyi döndürür.
+ */
+export function applyFollowUp(
+  progress: Progress,
+  c: PatientCase,
+  choice: number,
+  now: Date,
+): Progress {
+  const result = progress.caseResults[c.id];
+  const option = c.followUp?.decision.options[choice];
+  if (!c.followUp || !result || result.followUp || !option) return progress;
+  const card = toCard(c, followUpCardId(c.id), c.followUp.decision);
+  const rating = option.rating;
+  const reviewed = reviewCard(
+    progress,
+    card,
+    rating !== 'uygunDegil',
+    rating === 'uygun' ? 'sure' : 'unsure',
+    now,
+  );
+  return {
+    ...reviewed,
+    history: progress.history,
+    caseResults: {
+      ...progress.caseResults,
+      [c.id]: { ...result, followUp: { choice, at: now.toISOString() } },
+    },
+  };
 }

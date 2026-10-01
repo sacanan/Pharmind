@@ -34,7 +34,7 @@ Learning DNA ayrı bir özellik değil, bu grafiğin çıktısıdır. V1'de **ma
 | Mastery haritası | Kavram bazında renkli harita |
 | Haftalık streak | Haftalık hedef + dondurma hakkı |
 | "Cevabı açıkla" | Önceden hazırlanmış, denetlenmiş açıklamalar |
-| "Hasta geri geldi" | Dünkü vakanın sonucu ertesi gün döner `[?]` V1'e mi V2'ye mi kesin değil |
+| "Hasta geri geldi" | Dünkü vakanın sonucu ertesi gün döner (V1'e alındı, uygulandı) |
 
 ## 4. V1 dışı (bilerek yok)
 
@@ -100,4 +100,13 @@ AI Patient, canlı AI içerik üretimi, leaderboard, time attack, Pharmacy Simul
 - **Hedef ilişkisi:** vaka, günlük oturum hedefine (haftalık seri) sayılmaz; yalnızca Daily 5 sayılır. `[?]` karar bekliyor.
 - **Günün vakası seçimi:** bugün tamamlanan varsa o; yoksa oynanmamış ilk vaka; hepsi oynandıysa en eskisi tekrar.
 - **İçerik şeması:** `PatientCase` (`src/core/types.ts`): kaynak, son gözden geçirme tarihi ve durum (`taslak`/`onaylı`/`demo`) zorunludur. Şu an yalnızca tıbbi bilgi içermeyen bir demo vaka var.
-- "Hasta geri geldi" henüz yok.
+
+## Hasta geri geldi (uygulandı)
+
+- **Ne zaman:** vakayı çözdükten sonraki gün Home'da "Hasta geri geldi" görünür. Kaçırılırsa kaybolmaz, ceza yok; en eski bekleyen önce gelir. Aynı gün dönmez.
+- **Ne olur:** hastanın kısa anlatımı ve **tek yeni karar** (aynı üç kademeli puanlama, gerekçe ve sonuç notu).
+- **Kişiselleştirme:** anlatımın 3 varyantı vardır: `iyi` / `karisik` / `zayif`. Varyant, vaka kararlarının ortalamasından gelir (uygun 2, kabul 1, uygun değil 0): 1,5 ve üstü iyi, 0,75 ve üstü karışık, altı zayıf. Sorulan sorular varyanta etki etmez `[?]`.
+- **Mastery:** geri dönüş kararı da ilgili kavramlara bağlı bir karttır (uygun → Good, kabul → Hard, uygun değil → Again). Hasta dönene kadar işlenmediği için ilgili kavramın skorunda "görülmemiş" sayılır.
+- **Hedef ilişkisi:** günlük oturum hedefine (haftalık seri) sayılmaz.
+- **Tekrar oynama:** içerik azken aynı vaka yeniden oynanırsa eski geri dönüş cevabı silinir, hasta yeniden döner.
+- **İçerik maliyeti:** her vaka için 1 ek karar ve 3 kısa anlatım. `followUp` isteğe bağlıdır; yoksa hasta dönmez.

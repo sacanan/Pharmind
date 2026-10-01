@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { concepts, hasDemoContent, playableCards, playableCases } from '../content';
-import { decisionCards, pickTodaysCase } from '../core/case';
+import { decisionCards, pendingFollowUp, pickTodaysCase } from '../core/case';
 import { DAILY_SIZE } from '../core/daily';
 import { masteryMap } from '../core/mastery';
 import { sessionCells, todaysCells, type CellState } from '../core/session';
@@ -44,6 +44,7 @@ export default function Home() {
     now,
   );
   const todaysCase = pickTodaysCase(playableCases, progress, now);
+  const returning = pendingFollowUp(playableCases, progress, now);
 
   const start = () => {
     if (!inProgress) startSession();
@@ -82,6 +83,19 @@ export default function Home() {
       {!done && total > 0 ? (
         <View style={styles.action}>
           <Button label={inProgress ? 'Oturuma devam et' : 'Oturumu başlat'} onPress={start} />
+        </View>
+      ) : null}
+
+      {returning ? (
+        <View style={styles.section}>
+          <Text style={type.heading} accessibilityRole="header">
+            Hasta geri geldi
+          </Text>
+          <Text style={type.body}>{returning.case.title}</Text>
+          <Text style={type.small}>1 karar, yaklaşık 1 dakika.</Text>
+          <View style={styles.caseAction}>
+            <Button variant="secondary" label="Hastayı dinle" onPress={() => router.push('/followup')} />
+          </View>
         </View>
       ) : null}
 
