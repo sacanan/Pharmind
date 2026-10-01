@@ -4,7 +4,7 @@ import { concepts, hasDemoContent, playableCards } from '../content';
 import { DAILY_SIZE } from '../core/daily';
 import { masteryMap } from '../core/mastery';
 import { sessionCells, todaysCells, type CellState } from '../core/session';
-import { completedToday, weekDays, weeklyProgress } from '../core/weekly';
+import { completedToday, streakStatus, weekDays, weekStart, dayKey, weeklyProgress } from '../core/weekly';
 import { useStore } from '../state/progress-context';
 import { Blister } from '../ui/Blister';
 import { Button } from '../ui/Button';
@@ -31,6 +31,11 @@ export default function Home() {
       : Array<CellState>(DAILY_SIZE).fill('pending');
 
   const week = weeklyProgress(progress, now);
+  const streak = streakStatus(progress, now);
+  const lastWeek = dayKey(
+    new Date(weekStart(now).getFullYear(), weekStart(now).getMonth(), weekStart(now).getDate() - 7),
+  );
+  const usedFreezeLastWeek = streak.frozenWeeks.includes(lastWeek);
   const mastery = masteryMap(concepts, playableCards, progress, now);
 
   const start = () => {
@@ -78,6 +83,22 @@ export default function Home() {
           Bu hafta {week.done} / {week.goal} oturum
         </Text>
         <WeekDots days={weekDays(progress, now)} />
+        {streak.streak > 0 || streak.freezes > 0 ? (
+          <View style={styles.streak}>
+            {streak.streak > 0 ? (
+              <Text style={type.bodyStrong}>{streak.streak} haftalık seri</Text>
+            ) : null}
+            {usedFreezeLastWeek ? (
+              <Text style={type.body}>Geçen hafta dondurma hakkın kullanıldı, seri bozulmadı.</Text>
+            ) : null}
+            <Text style={type.small}>
+              {streak.freezes} dondurma hakkı. Hedefi tutturamadığın haftada kendiliğinden kullanılır.
+              {streak.freezes < 2
+                ? ` Bir sonraki hak için ${streak.untilNextFreeze} başarılı hafta.`
+                : ''}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       {mastery.length > 0 ? (
@@ -117,5 +138,6 @@ const styles = StyleSheet.create({
   lead: { color: colors.inkSoft },
   action: { marginTop: space.md },
   section: { marginTop: space.xl, gap: space.sm },
+  streak: { gap: 4 },
   dev: { marginTop: space.xl, alignItems: 'flex-start' },
 });

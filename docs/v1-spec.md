@@ -80,3 +80,12 @@ AI Patient, canlı AI içerik üretimi, leaderboard, time attack, Pharmacy Simul
 - Sonuç: yanlış cevap ~0, tek seferlik doğru cevap düşük, aralıklı tekrarlarla yükselir, tekrar edilmezse zamanla düşer.
 - FSRS notu: doğru ve emin → Good; doğru ama kararsız/tahmin → Hard; yanlış → Again; Easy V1'de kullanılmaz.
 - `[?]` 30 gün hedefi ilk tahmin; gerçek kullanımla ayarlanacak.
+
+## Haftalık seri ve dondurma hakkı (uygulandı)
+
+- Hedefi (haftada 5 oturum) tutturan hafta seriyi 1 artırır.
+- **Otomatik dondurma:** biten bir hafta hedefi tutturamadıysa ve hak varsa hak kendiliğinden harcanır; seri korunur ama artmaz. Hak yoksa seri 0'a düşer. Hiç oturum olmayan haftalar da aynı kurala tabidir.
+- **Kazanma:** her 4 başarılı haftada 1 hak, en fazla 2 birikir.
+- İçinde bulunulan hafta bitmeden başarısız sayılmaz.
+- Seri ayrı saklanmaz, `completedDays`'ten her seferinde hesaplanır (`streakStatus`).
+- `[?]` 4 hafta ve 2 hak üst sınırı ilk tahmin; kullanımla ayarlanır.
