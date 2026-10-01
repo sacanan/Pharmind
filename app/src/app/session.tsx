@@ -1,6 +1,6 @@
 import { Redirect, router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { playableCards } from '../content';
 import { sessionCells, summarize } from '../core/session';
 import type { Confidence } from '../core/types';
@@ -8,8 +8,9 @@ import { weeklyProgress } from '../core/weekly';
 import { useStore } from '../state/progress-context';
 import { Blister } from '../ui/Blister';
 import { Button } from '../ui/Button';
+import { Option } from '../ui/Option';
 import { Screen } from '../ui/Screen';
-import { colors, fonts, space, type } from '../ui/theme';
+import { colors, space, type } from '../ui/theme';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
@@ -215,72 +216,12 @@ function leave() {
   else router.replace('/');
 }
 
-function Option({
-  letter,
-  text,
-  selected,
-  onPress,
-}: {
-  letter: string;
-  text: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  const [focused, setFocused] = useState(false);
-  return (
-    <Pressable
-      accessibilityRole="radio"
-      accessibilityLabel={`${letter}, ${text}`}
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
-      style={({ pressed }) => [
-        styles.option,
-        selected && styles.optionSelected,
-        pressed && styles.optionPressed,
-        focused && styles.focus,
-      ]}
-    >
-      <View style={[styles.letter, selected && styles.letterSelected]}>
-        <Text style={[styles.letterText, selected && styles.letterTextSelected]}>{letter}</Text>
-      </View>
-      <Text style={[type.body, styles.optionText]}>{text}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   topBar: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   blisterWrap: { flex: 1 },
   block: { marginTop: space.lg, gap: space.xs },
   legend: { flexDirection: 'row', flexWrap: 'wrap', columnGap: space.sm, rowGap: 4, marginTop: space.sm },
   options: { marginTop: space.md, gap: 12 },
-  option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    minHeight: 64,
-    padding: 12,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: colors.foil,
-  },
-  optionSelected: { borderColor: colors.ink, borderWidth: 3, padding: 11 },
-  optionPressed: { opacity: 0.75 },
-  optionText: { flex: 1 },
-  letter: {
-    width: 40,
-    height: 40,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  letterSelected: { backgroundColor: colors.ink },
-  letterText: { fontFamily: fonts.bold, fontSize: 17, lineHeight: 22, color: colors.ink },
-  letterTextSelected: { color: colors.paper },
   choices: { marginTop: space.xs, gap: 8 },
   note: {
     marginTop: space.xs,
@@ -289,10 +230,4 @@ const styles = StyleSheet.create({
     paddingLeft: 12,
   },
   action: { marginTop: space.lg },
-  focus: {
-    outlineWidth: 3,
-    outlineColor: colors.ink,
-    outlineOffset: 2,
-    outlineStyle: 'solid',
-  },
 });

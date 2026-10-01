@@ -89,3 +89,15 @@ AI Patient, canlı AI içerik üretimi, leaderboard, time attack, Pharmacy Simul
 - İçinde bulunulan hafta bitmeden başarısız sayılmaz.
 - Seri ayrı saklanmaz, `completedDays`'ten her seferinde hesaplanır (`streakStatus`).
 - `[?]` 4 hafta ve 2 hak üst sınırı ilk tahmin; kullanımla ayarlanır.
+
+## Günün vakası, THINK (uygulandı)
+
+- **Akış:** hasta sunumu, en fazla 3 soru (sabit bütçe), 3 doğrusal karar noktası, sonuç. Her kararın ardından seçeneğin gerekçesi ve hastanın durumundaki değişiklik gösterilir.
+- **Soru bütçesi:** vakada 5–6 hazır soru vardır; bazıları `critical` (atlanırsa güvenli karar verilemez), kalanı değildir. Sonuçta "kritik bilgiden kaçını sordun", "gereksiz soru", ve sormadığın kritik sorunun cevabı gösterilir.
+- **Puanlama:** üç kademe, `uygun` / `kabul` / `uygunDegil`. İkili doğru-yanlış değil; her seçeneğin gerekçesi (şiddet ve ne yapılacağı) vardır.
+- **Dallanma:** V1'de doğrusal. Elmas yapısı `[?]` içerik yazım maliyeti görülünce eklenebilir.
+- **Mastery bağlantısı:** her karar noktası bir veya birkaç kavrama bağlıdır ve FSRS'te "kart" gibi işlenir (uygun → Good, kabul → Hard, uygunDegil → Again). Günlük 5 seçimine girmez, kavram mastery'sine katılır.
+- **Hedef ilişkisi:** vaka, günlük oturum hedefine (haftalık seri) sayılmaz; yalnızca Daily 5 sayılır. `[?]` karar bekliyor.
+- **Günün vakası seçimi:** bugün tamamlanan varsa o; yoksa oynanmamış ilk vaka; hepsi oynandıysa en eskisi tekrar.
+- **İçerik şeması:** `PatientCase` (`src/core/types.ts`): kaynak, son gözden geçirme tarihi ve durum (`taslak`/`onaylı`/`demo`) zorunludur. Şu an yalnızca tıbbi bilgi içermeyen bir demo vaka var.
+- "Hasta geri geldi" henüz yok.

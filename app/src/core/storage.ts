@@ -38,6 +38,11 @@ export function deserializeProgress(raw: string | null): Progress {
       cards,
       history: Array.isArray(data.history) ? data.history : [],
       completedDays: Array.isArray(data.completedDays) ? data.completedDays : [],
+      // Vaka özelliğinden önce kaydedilmiş ilerlemede bu alan yoktur.
+      caseResults:
+        data.caseResults && typeof data.caseResults === 'object' && !Array.isArray(data.caseResults)
+          ? data.caseResults
+          : {},
     };
   } catch {
     return emptyProgress();

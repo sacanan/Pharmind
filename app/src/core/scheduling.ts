@@ -20,7 +20,7 @@ export function gradeFor(correct: boolean, confidence: Confidence): Grade {
 }
 
 export function emptyProgress(): Progress {
-  return { version: 1, cards: {}, history: [], completedDays: [] };
+  return { version: 1, cards: {}, history: [], completedDays: [], caseResults: {} };
 }
 
 /** Bir kartı cevaplanmış olarak işler ve yeni bir Progress döndürür (girdiyi değiştirmez). */

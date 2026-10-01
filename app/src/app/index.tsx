@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
-import { concepts, hasDemoContent, playableCards } from '../content';
+import { concepts, hasDemoContent, playableCards, playableCases } from '../content';
+import { decisionCards, pickTodaysCase } from '../core/case';
 import { DAILY_SIZE } from '../core/daily';
 import { masteryMap } from '../core/mastery';
 import { sessionCells, todaysCells, type CellState } from '../core/session';
@@ -36,7 +37,13 @@ export default function Home() {
     new Date(weekStart(now).getFullYear(), weekStart(now).getMonth(), weekStart(now).getDate() - 7),
   );
   const usedFreezeLastWeek = streak.frozenWeeks.includes(lastWeek);
-  const mastery = masteryMap(concepts, playableCards, progress, now);
+  const mastery = masteryMap(
+    concepts,
+    [...playableCards, ...decisionCards(playableCases)],
+    progress,
+    now,
+  );
+  const todaysCase = pickTodaysCase(playableCases, progress, now);
 
   const start = () => {
     if (!inProgress) startSession();
@@ -75,6 +82,32 @@ export default function Home() {
       {!done && total > 0 ? (
         <View style={styles.action}>
           <Button label={inProgress ? 'Oturuma devam et' : 'Oturumu başlat'} onPress={start} />
+        </View>
+      ) : null}
+
+      {todaysCase ? (
+        <View style={styles.section}>
+          <Text style={type.heading} accessibilityRole="header">
+            Günün vakası
+          </Text>
+          {todaysCase.done ? (
+            <Text style={type.body}>Bugünkü vaka tamam. Yarın devam edebilirsin.</Text>
+          ) : (
+            <>
+              <Text style={type.body}>{todaysCase.case.title}</Text>
+              <Text style={type.small}>
+                {todaysCase.case.questionBudget} soru, {todaysCase.case.decisions.length} karar,
+                yaklaşık 3 dakika.
+              </Text>
+              <View style={styles.caseAction}>
+                <Button
+                  variant="secondary"
+                  label="Vakayı aç"
+                  onPress={() => router.push('/case')}
+                />
+              </View>
+            </>
+          )}
         </View>
       ) : null}
 
@@ -139,5 +172,6 @@ const styles = StyleSheet.create({
   action: { marginTop: space.md },
   section: { marginTop: space.xl, gap: space.sm },
   streak: { gap: 4 },
+  caseAction: { marginTop: space.xs },
   dev: { marginTop: space.xl, alignItems: 'flex-start' },
 });

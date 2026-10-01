@@ -4,6 +4,8 @@ import { colors, fonts } from './theme';
 
 interface Props {
   cells: CellState[];
+  /** Ekran okuyucu için özel açıklama; verilmezse günlük kart özeti okunur. */
+  label?: string;
 }
 
 const FILL: Partial<Record<CellState, string>> = {
@@ -34,9 +36,9 @@ function describe(cells: CellState[]): string {
  * Günün kartları, bir blister paketindeki gözler gibi. Cevaplandıkça içi dolar
  * ve rengi sonucu gösterir. Hem ilerleme hem sonuç göstergesidir.
  */
-export function Blister({ cells }: Props) {
+export function Blister({ cells, label }: Props) {
   return (
-    <View accessible accessibilityLabel={describe(cells)} style={styles.row}>
+    <View accessible accessibilityLabel={label ?? describe(cells)} style={styles.row}>
       {cells.map((state, i) => {
         const fill = FILL[state];
         return (

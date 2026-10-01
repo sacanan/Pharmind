@@ -10,10 +10,11 @@ import {
   type ReactNode,
 } from 'react';
 import { playableCards } from '../content';
+import { applyCase } from '../core/case';
 import { selectDaily } from '../core/daily';
 import { emptyProgress, reviewCard } from '../core/scheduling';
 import { loadProgress, saveProgress } from '../core/storage';
-import type { Card, Confidence, Progress, ReviewRecord } from '../core/types';
+import type { Card, CaseRun, Confidence, PatientCase, Progress, ReviewRecord } from '../core/types';
 import { markSessionComplete } from '../core/weekly';
 
 type SessionAnswer = Pick<ReviewRecord, 'cardId' | 'correct' | 'confidence'>;
@@ -31,6 +32,8 @@ interface Store {
   startSession: () => void;
   answer: (card: Card, correct: boolean, confidence: Confidence) => void;
   finishSession: () => void;
+  /** Vakayı tamamlar: karar kalitesi ilgili kavramların mastery'sine işlenir. */
+  completeCase: (c: PatientCase, run: CaseRun) => void;
   /** Yalnızca geliştirme için */
   resetAll: () => void;
 }
@@ -84,14 +87,30 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     commit(markSessionComplete(latest.current, new Date()));
   }, [commit]);
 
+  const completeCase = useCallback(
+    (c: PatientCase, run: CaseRun) => {
+      commit(applyCase(latest.current, c, run, new Date()));
+    },
+    [commit],
+  );
+
   const resetAll = useCallback(() => {
     setSession(null);
     commit(emptyProgress());
   }, [commit]);
 
   const value = useMemo<Store>(
-    () => ({ ready, progress, session, startSession, answer, finishSession, resetAll }),
-    [ready, progress, session, startSession, answer, finishSession, resetAll],
+    () => ({
+      ready,
+      progress,
+      session,
+      startSession,
+      answer,
+      finishSession,
+      completeCase,
+      resetAll,
+    }),
+    [ready, progress, session, startSession, answer, finishSession, completeCase, resetAll],
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
