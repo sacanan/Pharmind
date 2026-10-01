@@ -110,3 +110,10 @@ AI Patient, canlı AI içerik üretimi, leaderboard, time attack, Pharmacy Simul
 - **Hedef ilişkisi:** günlük oturum hedefine (haftalık seri) sayılmaz.
 - **Tekrar oynama:** içerik azken aynı vaka yeniden oynanırsa eski geri dönüş cevabı silinir, hasta yeniden döner.
 - **İçerik maliyeti:** her vaka için 1 ek karar ve 3 kısa anlatım. `followUp` isteğe bağlıdır; yoksa hasta dönmez.
+
+## Açık sorular (kod incelemesinden, karar bekliyor)
+
+- `[?]` **FSRS öğrenme adımları:** yeni karta Good verince tekrar 10 dk sonra "vadesi gelmiş" olur; uygulamayı yeniden açıp yeni oturum başlatınca aynı kart tekrar sorulabilir. Seçenekler: `enable_short_term: false` (gün bazlı aralık) veya "bugün görülen kartı bugün tekrar sorma". Mastery eşiklerini etkileyebilir.
+- `[?]` **Daily 5 ve vaka kararları:** mastery haritası vaka kararlarını sayıyor ama Daily 5 seçimi saymıyor. Spec "Daily 5 bu skorlara göre seçilir" diyor; vaka kararları seçime de katılsın mı?
+- `[?]` **Vakayı tekrar oynama:** bekleyen "Hasta geri geldi" varken aynı vaka tekrar oynanırsa hasta bir gün ötelenir ve karar kartları ikinci kez işlenir. Tekrar oynama etiketlenmeli mi, bekleyen hasta varken tekrar sunulmamalı mı?
+- `[?]` **Geri dönüşün onayı:** `followUp` kendi `source`/`reviewedAt`/`status` alanlarını taşımıyor, vakanınkini miras alıyor. Onaylı vakaya sonradan eklenen taslak geri dönüş örtük onaylı sayılır; ayrı onay alanı gerekir mi?
