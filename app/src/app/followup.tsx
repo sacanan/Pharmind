@@ -1,5 +1,5 @@
 import { Redirect, router } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { playableCases } from '../content';
 import { cellForRating, pendingFollowUp } from '../core/case';
@@ -26,17 +26,17 @@ const RATING_COLOR: Record<DecisionRating, string> = {
 };
 
 export default function FollowUpScreen() {
-  const { ready, progress, completeFollowUp } = useStore();
-  // Cevap kaydedilince bekleyen hasta kalmaz; ekran açıldığındaki seçim sabit tutulur.
-  const picked = useRef<{ case: PatientCase; tier: CaseTier } | null>(null);
-  if (ready && !picked.current) {
-    picked.current = pendingFollowUp(playableCases, progress, new Date());
-  }
+  const { ready } = useStore();
   if (!ready) return null;
-  if (!picked.current?.case.followUp) return <Redirect href="/" />;
-  return (
-    <FollowUp c={picked.current.case} tier={picked.current.tier} onChoose={completeFollowUp} />
-  );
+  return <FollowUpGate />;
+}
+
+/** İlerleme okunduktan sonra bağlanır; cevap kaydedilince bekleyen hasta kalmayacağı için seçim açılışta sabitlenir. */
+function FollowUpGate() {
+  const { progress, completeFollowUp } = useStore();
+  const [picked] = useState(() => pendingFollowUp(playableCases, progress, new Date()));
+  if (!picked?.case.followUp) return <Redirect href="/" />;
+  return <FollowUp c={picked.case} tier={picked.tier} onChoose={completeFollowUp} />;
 }
 
 function FollowUp({

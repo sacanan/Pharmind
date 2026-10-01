@@ -37,15 +37,17 @@ const RATING_COLOR: Record<DecisionRating, string> = {
 };
 
 export default function CaseScreen() {
-  const { ready, progress, completeCase } = useStore();
-  // Vaka tamamlanınca "bugün bitti" durumuna geçileceği için seçim ilk açılışta sabitlenir.
-  const picked = useRef<{ case: PatientCase; done: boolean } | null>(null);
-  if (ready && !picked.current) {
-    picked.current = pickTodaysCase(playableCases, progress, new Date());
-  }
+  const { ready } = useStore();
   if (!ready) return null;
-  if (!picked.current || picked.current.done) return <Redirect href="/" />;
-  return <CaseFlow c={picked.current.case} onComplete={completeCase} />;
+  return <CaseGate />;
+}
+
+/** İlerleme okunduktan sonra bağlanır; vaka seçimi açılışta sabitlenir (tamamlanınca "bugün bitti" olacağı için). */
+function CaseGate() {
+  const { progress, completeCase } = useStore();
+  const [picked] = useState(() => pickTodaysCase(playableCases, progress, new Date()));
+  if (!picked || picked.done) return <Redirect href="/" />;
+  return <CaseFlow c={picked.case} onComplete={completeCase} />;
 }
 
 function CaseFlow({

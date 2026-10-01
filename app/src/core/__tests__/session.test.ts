@@ -1,7 +1,6 @@
 import { cellFor, sessionCells, summarize, todaysCells } from '../session';
 import { emptyProgress, reviewCard } from '../scheduling';
-import { weekDays } from '../weekly';
-import { markSessionComplete } from '../weekly';
+import { markSessionComplete, weekDays } from '../weekly';
 import type { Card } from '../types';
 
 const card: Card = {
