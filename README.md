@@ -17,7 +17,11 @@ Günlük kullanım: **5 dakika, her gün biraz daha iyi.**
 
 ## Durum
 
-Planlama aşaması tamamlanıyor, kodlama başlamadı. Önce içerik şeması ve V1 spesifikasyonu.
+Uygulama iskeleti çalışıyor; **içerik henüz yok** (kartlar ve vaka tıbbi bilgi içermeyen demo yer tutuculardır). Gerçek içerik eklenene kadar ekranda "Demo içerik" uyarısı görünür.
+
+Çalışanlar: Daily 5 (FSRS + güven seçimi), kavram bazında mastery, haftalık seri ve otomatik dondurma, günün vakası (soru bütçesi, 3 karar), "Hasta geri geldi". Veriler yalnızca cihazda saklanır (hesap ve sunucu yok).
+
+Eksikler: gerçek içerik ve içerik şeması (dermokozmetik Excel bekleniyor), kapalı beta, bildirimler, ACT/BUILD katmanları.
 
 ## Yol haritası (V1)
 
@@ -30,10 +34,38 @@ Planlama aşaması tamamlanıyor, kodlama başlamadı. Önce içerik şeması ve
 
 Ayrıntılar: [`docs/v1-spec.md`](docs/v1-spec.md)
 
+## Çalıştırma
+
+Node.js gerekir. Uygulama `app/` klasöründedir (Expo SDK 57, React Native, TypeScript).
+
+```bash
+cd app
+npm install
+npx expo start --web      # tarayıcıda: http://localhost:8081
+npx expo start            # telefonda: Expo Go ile QR kodu okut (aynı Wi-Fi, Expo Go güncel olmalı)
+```
+
+Kalite kontrolleri (değişiklikten sonra üçü de temiz olmalı):
+
+```bash
+npm test                  # Jest (mantık ve içerik doğrulama testleri)
+npm run typecheck         # TypeScript
+npm run lint              # ESLint (eslint-config-expo)
+```
+
+Deneme ipuçları:
+- Veriler cihazın saatine göre işler. "Hasta geri geldi" vakadan **bir gün sonra** çıkar; denemek için vakayı çözüp cihazın tarihini bir gün ileri al.
+- Geliştirme sürümünde ana ekranın altında "İlerlemeyi sıfırla (geliştirici)" düğmesi vardır.
+- Gerçek içerik eklendiğinde `app/src/content/index.ts` içinde `ALLOW_DEMO_CONTENT = false` yapılır; yalnızca `onaylı` içerik oynanır.
+
 ## Klasörler
 
 - `docs/`: Ürün ve mekanik spesifikasyonları
-- `content/`: Kavram, kart ve vaka içerikleri ve şemaları
+- `content/`: Kavram, kart ve vaka içerikleri ve şemaları (henüz boş; şema Excel'e göre çıkarılacak)
+- `app/src/core/`: Arayüzden bağımsız mantık ve testleri (zamanlama, mastery, seri, vaka, depolama, içerik doğrulama)
+- `app/src/content/`: Uygulamaya gömülü içerik (şimdilik demo)
+- `app/src/state/`: İlerleme deposu (cihazda saklanır)
+- `app/src/ui/`, `app/src/app/`: Bileşenler ve ekranlar (Expo Router)
 - `CLAUDE.md`: Claude Code için proje kuralları
 
 ## Notlar
