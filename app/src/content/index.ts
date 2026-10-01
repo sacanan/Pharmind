@@ -1,4 +1,5 @@
 import type { Card, Concept, ContentStatus, PatientCase } from '../core/types';
+import { validateCard, validateCase } from '../core/validate';
 import { demoCards, demoConcepts } from './demo';
 import { demoCase } from './demo-case';
 
@@ -19,10 +20,17 @@ export function playable<T extends { status: ContentStatus }>(
   return items.filter((c) => c.status === 'onaylı' || (allowDemo && c.status === 'demo'));
 }
 
-export const playableCards: Card[] = playable(allCards);
+/**
+ * Oynanabilir içerik: izinli durumda ve yapısal olarak geçerli olanlar. Bozuk bir içerik
+ * (boş kaynak, aralık dışı doğru cevap vb.) uygulamayı çökertmek yerine sessizce dışarıda kalır;
+ * testler bunu yüksek sesle yakalar.
+ */
+export const playableCards: Card[] = playable(allCards).filter((c) => validateCard(c).length === 0);
 
 export const allCases: PatientCase[] = [demoCase];
-export const playableCases: PatientCase[] = playable(allCases);
+export const playableCases: PatientCase[] = playable(allCases).filter(
+  (c) => validateCase(c).length === 0,
+);
 
 export const hasDemoContent: boolean =
   playableCards.some((c) => c.status === 'demo') || playableCases.some((c) => c.status === 'demo');
