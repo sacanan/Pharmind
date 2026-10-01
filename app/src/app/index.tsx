@@ -21,15 +21,16 @@ export default function Home() {
   const now = new Date();
   const done = completedToday(progress, now);
   const total = Math.min(DAILY_SIZE, playableCards.length);
-  const inProgress = !!session && session.results.length < session.cardIds.length;
+  const inProgress =
+    !!session && session.day === dayKey(now) && session.results.length < session.cardIds.length;
 
   const cells: CellState[] = inProgress
     ? sessionCells(session.cardIds.length, session.results).map((c) =>
         c === 'current' ? 'pending' : c,
       )
     : done
-      ? todaysCells(progress, now, DAILY_SIZE)
-      : Array<CellState>(DAILY_SIZE).fill('pending');
+      ? todaysCells(progress, now, total || DAILY_SIZE)
+      : Array<CellState>(total || DAILY_SIZE).fill('pending');
 
   const week = weeklyProgress(progress, now);
   const streak = streakStatus(progress, now);
@@ -37,12 +38,13 @@ export default function Home() {
     new Date(weekStart(now).getFullYear(), weekStart(now).getMonth(), weekStart(now).getDate() - 7),
   );
   const usedFreezeLastWeek = streak.frozenWeeks.includes(lastWeek);
+  // Oynanabilir hiçbir içeriği olmayan kavram (örn. yalnızca taslak kartlarda geçen) gösterilmez.
   const mastery = masteryMap(
     concepts,
     [...playableCards, ...decisionCards(playableCases)],
     progress,
     now,
-  );
+  ).filter((e) => e.cardCount > 0);
   const todaysCase = pickTodaysCase(playableCases, progress, now);
   const returning = pendingFollowUp(playableCases, progress, now);
 

@@ -1,5 +1,5 @@
 import { Redirect, router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { playableCards } from '../content';
 import { sessionCells, summarize } from '../core/session';
@@ -28,21 +28,13 @@ const CONFIDENCE_CHOICES: { value: Confidence; label: string }[] = [
 ];
 
 export default function SessionScreen() {
-  const { ready, progress, session, answer, finishSession } = useStore();
+  const { ready, progress, session, answer } = useStore();
   const [selected, setSelected] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
-  const finished = useRef(false);
 
   const total = session?.cardIds.length ?? 0;
   const answered = session?.results.length ?? 0;
   const allDone = total > 0 && answered >= total && feedback === null;
-
-  useEffect(() => {
-    if (allDone && !finished.current) {
-      finished.current = true;
-      finishSession();
-    }
-  }, [allDone, finishSession]);
 
   if (!ready) return null;
   if (!session || total === 0) return <Redirect href="/" />;

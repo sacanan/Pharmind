@@ -15,11 +15,13 @@ import { selectDaily } from '../core/daily';
 import { emptyProgress, reviewCard } from '../core/scheduling';
 import { loadProgress, saveProgress } from '../core/storage';
 import type { Card, CaseRun, Confidence, PatientCase, Progress, ReviewRecord } from '../core/types';
-import { markSessionComplete } from '../core/weekly';
+import { dayKey, markSessionComplete } from '../core/weekly';
 
 type SessionAnswer = Pick<ReviewRecord, 'cardId' | 'correct' | 'confidence'>;
 
 export interface Session {
+  /** Oturumun başladığı gün (yerel, YYYY-MM-DD); gün değişince eski oturum geçersiz sayılır. */
+  day: string;
   cardIds: string[];
   results: SessionAnswer[];
 }
@@ -31,7 +33,6 @@ interface Store {
   session: Session | null;
   startSession: () => void;
   answer: (card: Card, correct: boolean, confidence: Confidence) => void;
-  finishSession: () => void;
   /** Vakayı tamamlar: karar kalitesi ilgili kavramların mastery'sine işlenir. */
   completeCase: (c: PatientCase, run: CaseRun) => void;
   /** "Hasta geri geldi" kararını işler. */
@@ -48,6 +49,13 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   // Hızlı art arda çağrılarda eski değerle çalışmamak için son ilerleme burada da tutulur.
   const latest = useRef<Progress>(progress);
+  const sessionRef = useRef<Session | null>(null);
+  // Diskteki kayıt okunamadıysa boş ilerleme onun üzerine yazılmasın.
+  const saveBlocked = useRef(false);
+  const setSessionBoth = useCallback((next: Session | null) => {
+    sessionRef.current = next;
+    setSession(next);
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -56,6 +64,9 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         if (!alive) return;
         latest.current = loaded;
         setProgress(loaded);
+      })
+      .catch(() => {
+        saveBlocked.current = true;
       })
       .finally(() => alive && setReady(true));
     return () => {
@@ -67,27 +78,36 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     latest.current = next;
     setProgress(next);
     // Kaydetme başarısız olsa bile uygulama çalışmaya devam eder.
+    if (saveBlocked.current) return;
     saveProgress(AsyncStorage, next).catch(() => {});
   }, []);
 
   const startSession = useCallback(() => {
-    const cards = selectDaily(playableCards, latest.current, new Date());
-    setSession({ cardIds: cards.map((c) => c.id), results: [] });
-  }, []);
+    const now = new Date();
+    const cards = selectDaily(playableCards, latest.current, now);
+    setSessionBoth({ day: dayKey(now), cardIds: cards.map((c) => c.id), results: [] });
+  }, [setSessionBoth]);
 
+  /**
+   * Cevabı işler. Son kartın cevabı oturumu da aynı kayıtta tamamlar; böylece son
+   * geri bildirim ekranında uygulamadan çıkılsa bile gün tamamlanmış sayılır.
+   */
   const answer = useCallback(
     (card: Card, correct: boolean, confidence: Confidence) => {
-      commit(reviewCard(latest.current, card, correct, confidence, new Date()));
-      setSession((s) =>
-        s ? { ...s, results: [...s.results, { cardId: card.id, correct, confidence }] } : s,
-      );
+      const now = new Date();
+      let next = reviewCard(latest.current, card, correct, confidence, now);
+      const current = sessionRef.current;
+      const updated = current
+        ? { ...current, results: [...current.results, { cardId: card.id, correct, confidence }] }
+        : current;
+      if (updated && updated.results.length >= updated.cardIds.length) {
+        next = markSessionComplete(next, now);
+      }
+      commit(next);
+      setSessionBoth(updated);
     },
-    [commit],
+    [commit, setSessionBoth],
   );
-
-  const finishSession = useCallback(() => {
-    commit(markSessionComplete(latest.current, new Date()));
-  }, [commit]);
 
   const completeCase = useCallback(
     (c: PatientCase, run: CaseRun) => {
@@ -104,9 +124,9 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   );
 
   const resetAll = useCallback(() => {
-    setSession(null);
+    setSessionBoth(null);
     commit(emptyProgress());
-  }, [commit]);
+  }, [commit, setSessionBoth]);
 
   const value = useMemo<Store>(
     () => ({
@@ -115,7 +135,6 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       session,
       startSession,
       answer,
-      finishSession,
       completeCase,
       completeFollowUp,
       resetAll,
@@ -126,7 +145,6 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       session,
       startSession,
       answer,
-      finishSession,
       completeCase,
       completeFollowUp,
       resetAll,

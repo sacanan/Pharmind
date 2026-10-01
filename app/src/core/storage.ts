@@ -9,6 +9,8 @@ export interface KeyValueStore {
 }
 
 export const PROGRESS_KEY = 'pharmind:v1:progress';
+/** Okunamayan kaydın ham kopyası; boş ilerleme üzerine yazılırken veri tamamen kaybolmasın. */
+export const BACKUP_KEY = 'pharmind:v1:progress:unreadable';
 
 export function serializeProgress(progress: Progress): string {
   return JSON.stringify(progress);
@@ -19,19 +21,27 @@ type StoredCard = Omit<FsrsCard, 'due' | 'last_review'> & {
   last_review?: string;
 };
 
-/** Bozuk veya uyumsuz kayıtta uygulama çökmesin diye boş ilerlemeye düşer. */
-export function deserializeProgress(raw: string | null): Progress {
-  if (!raw) return emptyProgress();
+/**
+ * Kaydı okur; kayıt yoksa, okunamıyorsa veya sürümü uyumsuzsa null döner.
+ * Tek bir bozuk kart girdisi tüm ilerlemeyi götürmesin diye o kart atlanır.
+ */
+function parseProgress(raw: string | null): Progress | null {
+  if (!raw) return null;
   try {
     const data = JSON.parse(raw) as Progress | null;
-    if (!data || data.version !== 1 || typeof data.cards !== 'object') return emptyProgress();
+    if (!data || data.version !== 1 || !data.cards || typeof data.cards !== 'object') return null;
     const cards: Record<string, FsrsCard> = {};
     for (const [id, stored] of Object.entries(data.cards as unknown as Record<string, StoredCard>)) {
-      cards[id] = {
-        ...stored,
-        due: new Date(stored.due),
-        last_review: stored.last_review ? new Date(stored.last_review) : undefined,
-      };
+      try {
+        const due = new Date(stored.due);
+        const lastReview = stored.last_review ? new Date(stored.last_review) : undefined;
+        if (Number.isNaN(due.getTime()) || (lastReview && Number.isNaN(lastReview.getTime()))) {
+          continue;
+        }
+        cards[id] = { ...stored, due, last_review: lastReview };
+      } catch {
+        // bozuk kart girdisini atla
+      }
     }
     return {
       version: 1,
@@ -45,12 +55,23 @@ export function deserializeProgress(raw: string | null): Progress {
           : {},
     };
   } catch {
-    return emptyProgress();
+    return null;
   }
 }
 
+/** Bozuk veya uyumsuz kayıtta uygulama çökmesin diye boş ilerlemeye düşer. */
+export function deserializeProgress(raw: string | null): Progress {
+  return parseProgress(raw) ?? emptyProgress();
+}
+
 export async function loadProgress(store: KeyValueStore): Promise<Progress> {
-  return deserializeProgress(await store.getItem(PROGRESS_KEY));
+  const raw = await store.getItem(PROGRESS_KEY);
+  const parsed = parseProgress(raw);
+  if (!parsed && raw) {
+    // Kayıt var ama okunamadı: boş ilerleme bunun üzerine yazacak, önce ham kopyayı sakla.
+    await store.setItem(BACKUP_KEY, raw).catch(() => {});
+  }
+  return parsed ?? emptyProgress();
 }
 
 export async function saveProgress(store: KeyValueStore, progress: Progress): Promise<void> {
