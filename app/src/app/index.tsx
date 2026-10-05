@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
-import { concepts, hasDemoContent, playableCards, playableCases } from '../content';
-import { decisionCards, pendingFollowUp, pickTodaysCase } from '../core/case';
+import { concepts, hasDemoContent, masteryCards, playableCards, playableCases } from '../content';
+import { pendingFollowUp, pickTodaysCase } from '../core/case';
 import { DAILY_SIZE } from '../core/daily';
 import { masteryMap } from '../core/mastery';
 import { sessionCells, todaysCells, type CellState } from '../core/session';
@@ -39,12 +39,7 @@ export default function Home() {
   );
   const usedFreezeLastWeek = streak.frozenWeeks.includes(lastWeek);
   // Oynanabilir hiçbir içeriği olmayan kavram (örn. yalnızca taslak kartlarda geçen) gösterilmez.
-  const mastery = masteryMap(
-    concepts,
-    [...playableCards, ...decisionCards(playableCases)],
-    progress,
-    now,
-  ).filter((e) => e.cardCount > 0);
+  const mastery = masteryMap(concepts, masteryCards, progress, now).filter((e) => e.cardCount > 0);
   const todaysCase = pickTodaysCase(playableCases, progress, now);
   const returning = pendingFollowUp(playableCases, progress, now);
 

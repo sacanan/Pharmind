@@ -1,4 +1,5 @@
 import type { Card, Concept, ContentStatus, PatientCase } from '../core/types';
+import { decisionCards } from '../core/case';
 import { validateCard, validateCase } from '../core/validate';
 import { demoCards, demoConcepts } from './demo';
 import { demoCase } from './demo-case';
@@ -31,6 +32,12 @@ export const allCases: PatientCase[] = [demoCase];
 export const playableCases: PatientCase[] = playable(allCases).filter(
   (c) => validateCase(c).length === 0,
 );
+
+/**
+ * Kavram mastery'sine katılan her şey: oynanabilir kartlar ve vaka kararları.
+ * Ana ekrandaki harita ve Daily 5 seçimi aynı listeyi kullanır.
+ */
+export const masteryCards: Card[] = [...playableCards, ...decisionCards(playableCases)];
 
 export const hasDemoContent: boolean =
   playableCards.some((c) => c.status === 'demo') || playableCases.some((c) => c.status === 'demo');

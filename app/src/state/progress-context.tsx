@@ -9,9 +9,9 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { playableCards } from '../content';
+import { masteryCards, playableCards } from '../content';
 import { applyCase, applyFollowUp } from '../core/case';
-import { selectDaily } from '../core/daily';
+import { DAILY_SIZE, selectDaily } from '../core/daily';
 import { emptyProgress, reviewCard } from '../core/scheduling';
 import { loadProgress, saveProgress } from '../core/storage';
 import type { Card, CaseRun, Confidence, PatientCase, Progress, ReviewRecord } from '../core/types';
@@ -84,7 +84,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
 
   const startSession = useCallback(() => {
     const now = new Date();
-    const cards = selectDaily(playableCards, latest.current, now);
+    const cards = selectDaily(playableCards, latest.current, now, DAILY_SIZE, masteryCards);
     setSessionBoth({ day: dayKey(now), cardIds: cards.map((c) => c.id), results: [] });
   }, [setSessionBoth]);
 

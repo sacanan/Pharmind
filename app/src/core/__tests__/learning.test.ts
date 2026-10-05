@@ -53,6 +53,20 @@ describe('reviewCard', () => {
     expect(good.cards.c1.due.getTime()).toBeGreaterThan(bad.cards.c1.due.getTime());
   });
 
+  it('hiçbir cevap kartı aynı gün tekrar sorulacak hale getirmez (gün bazlı aralık)', () => {
+    const cases: [boolean, 'sure' | 'unsure' | 'guess'][] = [
+      [false, 'sure'],
+      [false, 'guess'],
+      [true, 'guess'],
+      [true, 'unsure'],
+      [true, 'sure'],
+    ];
+    for (const [correct, confidence] of cases) {
+      const p = reviewCard(emptyProgress(), c, correct, confidence, NOW);
+      expect(p.cards.c1.due.getTime() - NOW.getTime()).toBeGreaterThanOrEqual(DAY);
+    }
+  });
+
   it('hiç görülmemiş kartın hatırlanma olasılığı 0', () => {
     expect(retrievability(emptyProgress(), 'c1', NOW)).toBe(0);
   });
@@ -161,6 +175,21 @@ describe('selectDaily', () => {
     const picked = selectDaily(cards, p, now, 7).map((c) => c.id);
     expect(picked).toHaveLength(7);
     expect(picked[6]).toBe('a1');
+  });
+
+  it('mastery için verilen ek kartlar (vaka kararları) en zayıf kavramı belirler', () => {
+    // Normal kartlarda a, b, c eşit (hiçbiri görülmedi) ve eşitlik kimlikle bozulur: a önce gelir.
+    // Vaka kararı a kavramında iyi cevaplandıysa a artık "daha az zayıf" olmalı.
+    const decision: Card = { ...card('case:x:d1', 'a'), conceptIds: ['a'] };
+    const progress = reviewCard(emptyProgress(), decision, true, 'sure', NOW);
+    const later = new Date(NOW.getTime() + 1000);
+    const without = selectDaily(cards, progress, later, 7).map((c) => c.id);
+    const withDecisions = selectDaily(cards, progress, later, 7, [...cards, decision]).map((c) => c.id);
+    expect(without.indexOf('a1')).toBeLessThan(without.indexOf('b1'));
+    expect(withDecisions.indexOf('a1')).toBeGreaterThan(withDecisions.indexOf('b1'));
+    // seçilen kartlar yalnızca normal kartlardır, karar kartı sızmaz
+    expect(withDecisions.every((id) => !id.startsWith('case:'))).toBe(true);
+    expect(withDecisions).toHaveLength(7);
   });
 
   it('yeni kartlarda en zayıf kavramdan başlar', () => {

@@ -11,12 +11,16 @@ export const DAILY_SIZE = 5;
  * 3. Hâlâ yer varsa, zamanı gelmemiş ama en çok unutulmaya yakın kartlar
  *
  * Aynı girdide aynı sonucu verir (rastgelelik yok), bu yüzden test edilebilir.
+ *
+ * `masteryCards`: kavram zayıflığı hesaplanırken kullanılan kart listesi. Vaka kararları da
+ * kavram mastery'sine katıldığı için buraya eklenir; seçilen kartlar yine yalnızca `cards`'tandır.
  */
 export function selectDaily(
   cards: Card[],
   progress: Progress,
   now: Date,
   size: number = DAILY_SIZE,
+  masteryCards: Card[] = cards,
 ): Card[] {
   const seen = cards.filter((c) => progress.cards[c.id]);
   const unseen = cards.filter((c) => !progress.cards[c.id]);
@@ -30,7 +34,7 @@ export function selectDaily(
     .sort(byRetrievability);
 
   const weakestConceptMastery = (card: Card) =>
-    Math.min(...card.conceptIds.map((id) => conceptMastery(id, cards, progress, now)));
+    Math.min(...card.conceptIds.map((id) => conceptMastery(id, masteryCards, progress, now)));
 
   const fresh = [...unseen].sort(
     (a, b) => weakestConceptMastery(a) - weakestConceptMastery(b) || a.id.localeCompare(b.id),

@@ -1,7 +1,12 @@
 import { Rating, createEmptyCard, fsrs, type Grade } from 'ts-fsrs';
 import type { Card, Confidence, Progress, ReviewRecord } from './types';
 
-const scheduler = fsrs({ request_retention: 0.9 });
+/**
+ * Günlük oturum mantığı: kısa öğrenme adımları (dakikalar) kapalıdır, aralıklar gün bazlıdır.
+ * Aksi halde yeni karta cevap verdikten 10 dakika sonra kart "vadesi gelmiş" sayılır ve
+ * aynı gün açılan yeni oturumda aynı kartlar yeniden sorulabilirdi.
+ */
+const scheduler = fsrs({ request_retention: 0.9, enable_short_term: false });
 
 export const HISTORY_LIMIT = 500;
 
