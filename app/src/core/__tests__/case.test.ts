@@ -170,11 +170,55 @@ describe('günün vakası', () => {
     expect(pickTodaysCase(cases, p, tomorrow)).toEqual({ case: other, done: false });
   });
 
-  it('hepsi oynandıysa en eski oynananı tekrar verir', () => {
+  it('hepsi oynandıysa ve hastalar cevaplandıysa en eski oynananı tekrar verir', () => {
     let p = applyCase(emptyProgress(), c, play(BEST), NOW);
     p = applyCase(p, other, play(BEST), new Date(NOW.getTime() + DAY));
+    p = applyFollowUp(p, c, 1, new Date(NOW.getTime() + 2 * DAY));
+    p = applyFollowUp(p, other, 1, new Date(NOW.getTime() + 2 * DAY));
     const later = new Date(NOW.getTime() + 3 * DAY);
     expect(pickTodaysCase(cases, p, later)).toEqual({ case: c, done: false });
+  });
+});
+
+describe('bekleyen hasta varken vaka tekrarı', () => {
+  const other: PatientCase = { ...c, id: 'demo-vaka-2', title: 'İkinci' };
+  const NEXT = new Date(NOW.getTime() + DAY);
+  const played = (cases: PatientCase[]) =>
+    cases.reduce((p, k, i) => applyCase(p, k, play(BEST), new Date(NOW.getTime() + i * 1000)), emptyProgress());
+
+  it('tek vaka ve hastası bekliyorsa tekrar sunulmaz, hasta döner', () => {
+    const p = played([c]);
+    expect(pickTodaysCase([c], p, NEXT)).toBeNull();
+    expect(pendingFollowUp([c], p, NEXT)?.case.id).toBe(c.id);
+  });
+
+  it('hasta cevaplandıktan sonra vaka yeniden sunulabilir', () => {
+    const p = applyFollowUp(played([c]), c, 1, NEXT);
+    expect(pickTodaysCase([c], p, new Date(NEXT.getTime() + DAY))).toEqual({ case: c, done: false });
+  });
+
+  it('başka oynanmamış vaka varsa o sunulur', () => {
+    const p = played([c]);
+    expect(pickTodaysCase([c, other], p, NEXT)).toEqual({ case: other, done: false });
+  });
+
+  it('tekrar adayları arasından hastası bekleyen vaka çıkarılır', () => {
+    // İki vaka da oynandı; yalnızca ikincinin hastası döndü ve cevaplandı
+    let p = played([c, other]);
+    p = applyFollowUp(p, other, 1, NEXT);
+    // c'nin hastası hâlâ bekliyor -> tekrar adayı yalnızca other
+    expect(pickTodaysCase([c, other], p, NEXT)).toEqual({ case: other, done: false });
+  });
+
+  it('geri dönüş içeriği olmayan vaka bekleyen sayılmaz, tekrar sunulabilir', () => {
+    const noFollow: PatientCase = { ...c, id: 'x', followUp: undefined };
+    const p = applyCase(emptyProgress(), noFollow, play(BEST), NOW);
+    expect(pickTodaysCase([noFollow], p, NEXT)).toEqual({ case: noFollow, done: false });
+  });
+
+  it('aynı gün tamamlanan vaka done olarak kalır (bekleyen sayılmaz)', () => {
+    const p = played([c]);
+    expect(pickTodaysCase([c], p, new Date(NOW.getTime() + 60_000))).toEqual({ case: c, done: true });
   });
 });
 

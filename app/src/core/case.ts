@@ -165,9 +165,18 @@ export function caseDoneToday(
   );
 }
 
+/** Vakanın geri dönüşü bekliyor mu: içerik var, vaka oynanmış, cevaplanmamış, vakadan sonra bir gün geçmiş. */
+function hasPendingFollowUp(c: PatientCase, progress: Progress, now: Date): boolean {
+  const r = progress.caseResults[c.id];
+  return !!c.followUp && !!r && !r.followUp && dayKey(new Date(r.at)) < dayKey(now);
+}
+
 /**
  * Günün vakası: bugün zaten biri tamamlandıysa o; yoksa henüz oynanmamış ilk vaka;
  * hepsi oynandıysa en eski oynanan (içerik yetmediğinde tekrar). Vaka yoksa null.
+ *
+ * Hastası geri dönmeyi bekleyen vaka tekrar sunulmaz: önce hasta geri döner ve cevaplanır,
+ * böylece hasta ötelenmez ve kararlar iki kez işlenmez. Başka sunulacak vaka yoksa null döner.
  */
 export function pickTodaysCase(
   cases: PatientCase[],
@@ -177,12 +186,13 @@ export function pickTodaysCase(
   if (cases.length === 0) return null;
   const done = caseDoneToday(cases, progress, now);
   if (done) return { case: done, done: true };
-  const fresh = cases.find((c) => !progress.caseResults[c.id]);
+  const offerable = cases.filter((c) => !hasPendingFollowUp(c, progress, now));
+  const fresh = offerable.find((c) => !progress.caseResults[c.id]);
   if (fresh) return { case: fresh, done: false };
-  const oldest = [...cases].sort((a, b) =>
+  const oldest = [...offerable].sort((a, b) =>
     progress.caseResults[a.id].at.localeCompare(progress.caseResults[b.id].at),
   )[0];
-  return { case: oldest, done: false };
+  return oldest ? { case: oldest, done: false } : null;
 }
 
 const TIER_SCORE: Record<DecisionRating, number> = { uygun: 2, kabul: 1, uygunDegil: 0 };
@@ -208,12 +218,8 @@ export function pendingFollowUp(
   progress: Progress,
   now: Date,
 ): { case: PatientCase; tier: CaseTier } | null {
-  const today = dayKey(now);
   const waiting = cases
-    .filter((c) => {
-      const r = progress.caseResults[c.id];
-      return !!c.followUp && !!r && !r.followUp && dayKey(new Date(r.at)) < today;
-    })
+    .filter((c) => hasPendingFollowUp(c, progress, now))
     .sort((a, b) => progress.caseResults[a.id].at.localeCompare(progress.caseResults[b.id].at));
   const c = waiting[0];
   if (!c) return null;
