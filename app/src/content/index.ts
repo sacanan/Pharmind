@@ -1,6 +1,6 @@
 import type { Card, Concept, ContentStatus, PatientCase } from '../core/types';
 import { decisionCards } from '../core/case';
-import { validateCard, validateCase } from '../core/validate';
+import { validateCard, validateCase, validateFollowUp } from '../core/validate';
 import { demoCards, demoConcepts } from './demo';
 import { demoCase } from './demo-case';
 
@@ -29,9 +29,27 @@ export function playable<T extends { status: ContentStatus }>(
 export const playableCards: Card[] = playable(allCards).filter((c) => validateCard(c).length === 0);
 
 export const allCases: PatientCase[] = [demoCase];
-export const playableCases: PatientCase[] = playable(allCases).filter(
-  (c) => validateCase(c).length === 0,
-);
+/**
+ * Bir vakanın oynanabilir görünümü: vaka izinli durumda ve geçerli değilse null. Geri dönüş
+ * ("Hasta geri geldi") ayrıca onaylanır; onaysız (taslak) veya bozuk geri dönüş yalnızca
+ * geri dönüşü düşürür, vakanın kendisi oynanmaya devam eder.
+ */
+export function playableCaseView(
+  c: PatientCase,
+  allowDemo: boolean = ALLOW_DEMO_CONTENT,
+): PatientCase | null {
+  if (playable([c], allowDemo).length === 0) return null;
+  const followUpOk =
+    !!c.followUp &&
+    playable([c.followUp], allowDemo).length === 1 &&
+    validateFollowUp(c.followUp).length === 0;
+  const view = followUpOk ? c : { ...c, followUp: undefined };
+  return validateCase(view).length === 0 ? view : null;
+}
+
+export const playableCases: PatientCase[] = allCases
+  .map((c) => playableCaseView(c))
+  .filter((c): c is PatientCase => c !== null);
 
 /**
  * Kavram mastery'sine katılan her şey: oynanabilir kartlar ve vaka kararları.

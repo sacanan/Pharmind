@@ -83,6 +83,14 @@ export interface CaseFollowUp {
   /** Hastanın dönüşte anlattığı; kararların genel kalitesine göre */
   returns: Record<CaseTier, string>;
   decision: CaseDecision;
+  /**
+   * Geri dönüş kendi kaynağını ve onay durumunu taşır; vakanınkini miras almaz.
+   * Onaylı vakaya sonradan eklenen taslak geri dönüş, onaylanana kadar oynanmaz.
+   */
+  source: string;
+  /** Son gözden geçirme tarihi, YYYY-MM-DD. */
+  reviewedAt: string;
+  status: ContentStatus;
 }
 
 /** Günün vakası: kısa hasta, soru bütçesi, doğrusal 3 karar noktası ve sonuç. */

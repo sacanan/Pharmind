@@ -3,6 +3,7 @@ import type {
   Card,
   CaseDecision,
   CaseTier,
+  ContentStatus,
   CaseOption,
   CaseQuestion,
   CaseRun,
@@ -88,7 +89,11 @@ export function decisionCardId(caseId: string, decisionId: string): string {
   return `case:${caseId}:${decisionId}`;
 }
 
-function toCard(c: PatientCase, id: string, d: CaseDecision): Card {
+function toCard(
+  meta: { source: string; reviewedAt: string; status: ContentStatus },
+  id: string,
+  d: CaseDecision,
+): Card {
   return {
     id,
     conceptIds: d.conceptIds,
@@ -99,9 +104,9 @@ function toCard(c: PatientCase, id: string, d: CaseDecision): Card {
       d.options.findIndex((o) => o.rating === 'uygun'),
     ),
     explanation: '',
-    source: c.source,
-    reviewedAt: c.reviewedAt,
-    status: c.status,
+    source: meta.source,
+    reviewedAt: meta.reviewedAt,
+    status: meta.status,
   };
 }
 
@@ -118,7 +123,7 @@ export function followUpCardId(caseId: string): string {
 export function decisionCards(cases: PatientCase[]): Card[] {
   return cases.flatMap((c) => [
     ...c.decisions.map((d) => toCard(c, decisionCardId(c.id, d.id), d)),
-    ...(c.followUp ? [toCard(c, followUpCardId(c.id), c.followUp.decision)] : []),
+    ...(c.followUp ? [toCard(c.followUp, followUpCardId(c.id), c.followUp.decision)] : []),
   ]);
 }
 
@@ -239,7 +244,7 @@ export function applyFollowUp(
   const result = progress.caseResults[c.id];
   const option = c.followUp?.decision.options[choice];
   if (!c.followUp || !result || result.followUp || !option) return progress;
-  const card = toCard(c, followUpCardId(c.id), c.followUp.decision);
+  const card = toCard(c.followUp, followUpCardId(c.id), c.followUp.decision);
   const rating = option.rating;
   const reviewed = reviewCard(
     progress,

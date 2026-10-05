@@ -113,6 +113,9 @@ describe('applyCase ve mastery', () => {
     expect(dcards[0].id).toBe(decisionCardId(c.id, 'd1'));
     expect(dcards[2].conceptIds).toEqual(['demo-a', 'demo-c']);
     expect(dcards[3].id).toBe(followUpCardId(c.id));
+    // geri dönüş kartı kendi kaynağını ve durumunu taşır
+    expect(dcards[3].status).toBe(c.followUp!.status);
+    expect(dcards[3].source).toBe(c.followUp!.source);
     // doğru indeks "uygun" seçenektir
     expect(dcards.slice(0, 3).map((d) => d.correctIndex)).toEqual(BEST);
   });

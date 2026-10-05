@@ -1,4 +1,12 @@
-import { allCards, allCases, concepts, playable, playableCards, playableCases } from '../../content';
+import {
+  allCards,
+  allCases,
+  concepts,
+  playable,
+  playableCaseView,
+  playableCards,
+  playableCases,
+} from '../../content';
 import { demoCase } from '../../content/demo-case';
 import { validateCard, validateCase } from '../validate';
 import type { Card, PatientCase } from '../types';
@@ -139,5 +147,66 @@ describe('validateCase', () => {
     const problems = validateCase(c);
     expect(problems).toContain('soru kimlikleri tekrar ediyor');
     expect(problems).toContain('kaynak boş');
+  });
+});
+
+describe('geri dönüşün ayrı onayı', () => {
+  const clone = (): PatientCase => JSON.parse(JSON.stringify(demoCase));
+  const approved = (): PatientCase => {
+    const c = clone();
+    c.status = 'onaylı';
+    c.followUp!.status = 'onaylı';
+    return c;
+  };
+
+  it('onaylı vaka ve onaylı geri dönüş birlikte oynanır', () => {
+    expect(playableCaseView(approved(), false)?.followUp).toBeDefined();
+  });
+
+  it('onaylı vakaya eklenen taslak geri dönüş oynanmaz, vaka oynanır', () => {
+    const c = approved();
+    c.followUp!.status = 'taslak';
+    const view = playableCaseView(c, false);
+    expect(view).not.toBeNull();
+    expect(view?.followUp).toBeUndefined();
+  });
+
+  it('demo geri dönüş, demo izni kapalıyken düşer', () => {
+    const c = approved();
+    c.followUp!.status = 'demo';
+    expect(playableCaseView(c, false)?.followUp).toBeUndefined();
+    expect(playableCaseView(c, true)?.followUp).toBeDefined();
+  });
+
+  it('taslak vaka hiçbir ayarda oynanmaz', () => {
+    const c = approved();
+    c.status = 'taslak';
+    expect(playableCaseView(c, true)).toBeNull();
+    expect(playableCaseView(c, false)).toBeNull();
+  });
+
+  it('bozuk (kaynaksız) geri dönüş düşer, vaka oynanır', () => {
+    const c = approved();
+    c.followUp!.source = '';
+    const view = playableCaseView(c, false);
+    expect(view).not.toBeNull();
+    expect(view?.followUp).toBeUndefined();
+  });
+
+  it('geri dönüşün kaynağı, tarihi ve durumu doğrulanır', () => {
+    const c = clone();
+    c.followUp!.source = ' ';
+    c.followUp!.reviewedAt = 'dün';
+    c.followUp!.status = 'yayında' as never;
+    const problems = validateCase(c).join(' | ');
+    expect(problems).toContain('geri dönüş: kaynak boş');
+    expect(problems).toContain('geri dönüş: gözden geçirme tarihi');
+    expect(problems).toContain('geri dönüş: durum geçersiz');
+  });
+
+  it('oynanabilir vakaların geri dönüşü yalnızca izinli durumdadır', () => {
+    for (const c of playableCases) {
+      if (c.followUp) expect(['onaylı', 'demo']).toContain(c.followUp.status);
+    }
   });
 });

@@ -1,4 +1,4 @@
-import type { Card, CaseDecision, ContentStatus, PatientCase } from './types';
+import type { Card, CaseDecision, CaseFollowUp, ContentStatus, PatientCase } from './types';
 
 const STATUSES: ContentStatus[] = ['taslak', 'onaylı', 'demo'];
 const RATINGS = ['uygun', 'kabul', 'uygunDegil'];
@@ -98,11 +98,16 @@ export function validateCase(c: PatientCase): string[] {
   if (decisions.length === 0) problems.push('en az bir karar noktası olmalı');
   decisions.forEach((d, i) => problems.push(...validateDecision(d, `karar ${i + 1}`)));
 
-  if (c.followUp) {
-    for (const tier of TIERS) {
-      if (!filled(c.followUp.returns?.[tier])) problems.push(`geri dönüş: "${tier}" anlatımı boş`);
-    }
-    problems.push(...validateDecision(c.followUp.decision, 'geri dönüş kararı'));
+  if (c.followUp) problems.push(...validateFollowUp(c.followUp));
+  return problems;
+}
+
+/** Geri dönüşü (kendi kaynak, tarih ve durumuyla birlikte) yapısal olarak doğrular. */
+export function validateFollowUp(f: CaseFollowUp): string[] {
+  const problems = validateCommon(f).map((p) => `geri dönüş: ${p}`);
+  for (const tier of TIERS) {
+    if (!filled(f.returns?.[tier])) problems.push(`geri dönüş: "${tier}" anlatımı boş`);
   }
+  problems.push(...validateDecision(f.decision, 'geri dönüş kararı'));
   return problems;
 }

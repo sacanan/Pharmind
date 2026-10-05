@@ -108,12 +108,12 @@ AI Patient, canlı AI içerik üretimi, leaderboard, time attack, Pharmacy Simul
 - **Kişiselleştirme:** anlatımın 3 varyantı vardır: `iyi` / `karisik` / `zayif`. Varyant, vaka kararlarının ortalamasından gelir (uygun 2, kabul 1, uygun değil 0): 1,5 ve üstü iyi, 0,75 ve üstü karışık, altı zayıf. Sorulan sorular varyanta etki etmez `[?]`.
 - **Mastery:** geri dönüş kararı da ilgili kavramlara bağlı bir karttır (uygun → Good, kabul → Hard, uygun değil → Again). Hasta dönene kadar işlenmediği için ilgili kavramın skorunda "görülmemiş" sayılır.
 - **Hedef ilişkisi:** günlük oturum hedefine (haftalık seri) sayılmaz.
-- **Tekrar oynama:** içerik azken aynı vaka yeniden oynanırsa eski geri dönüş cevabı silinir, hasta yeniden döner.
-- **İçerik maliyeti:** her vaka için 1 ek karar ve 3 kısa anlatım. `followUp` isteğe bağlıdır; yoksa hasta dönmez.
+- **Tekrar oynama:** içerik azken, hastası cevaplanmış vaka yeniden oynanırsa eski geri dönüş cevabı silinir ve hasta yeniden döner. Hastası bekleyen vaka tekrar sunulmaz (aşağıdaki kararlara bakın).
+- **İçerik maliyeti:** her vaka için 1 ek karar ve 3 kısa anlatım. `followUp` isteğe bağlıdır; yoksa hasta dönmez. Kendi kaynağı, tarihi ve durumu vardır.
 
-## Açık sorular (kod incelemesinden, karar bekliyor)
+## Kod incelemesinden çıkan kararlar (uygulandı)
 
-- `[?]` **FSRS öğrenme adımları:** yeni karta Good verince tekrar 10 dk sonra "vadesi gelmiş" olur; uygulamayı yeniden açıp yeni oturum başlatınca aynı kart tekrar sorulabilir. Seçenekler: `enable_short_term: false` (gün bazlı aralık) veya "bugün görülen kartı bugün tekrar sorma". Mastery eşiklerini etkileyebilir.
-- `[?]` **Daily 5 ve vaka kararları:** mastery haritası vaka kararlarını sayıyor ama Daily 5 seçimi saymıyor. Spec "Daily 5 bu skorlara göre seçilir" diyor; vaka kararları seçime de katılsın mı?
-- `[?]` **Vakayı tekrar oynama:** bekleyen "Hasta geri geldi" varken aynı vaka tekrar oynanırsa hasta bir gün ötelenir ve karar kartları ikinci kez işlenir. Tekrar oynama etiketlenmeli mi, bekleyen hasta varken tekrar sunulmamalı mı?
-- `[?]` **Geri dönüşün onayı:** `followUp` kendi `source`/`reviewedAt`/`status` alanlarını taşımıyor, vakanınkini miras alıyor. Onaylı vakaya sonradan eklenen taslak geri dönüş örtük onaylı sayılır; ayrı onay alanı gerekir mi?
+- **Tekrar zamanı:** FSRS kısa öğrenme adımları kapalıdır (`enable_short_term: false`). Aralıklar gün bazlıdır: yeni kartta yanlış +1 gün, doğru ama kararsız +2 gün, doğru ve emin +3 gün. Hiçbir cevap kartı aynı gün tekrar sorulacak hale getirmez.
+- **Daily 5 ve vaka:** Daily 5, kavram zayıflığını vaka kararlarını (ve geri dönüş kararını) da sayarak hesaplar; seçilen kartlar yine yalnızca normal kartlardır. Ana ekrandaki harita aynı listeyi kullanır.
+- **Vakayı tekrar oynama:** Hastası geri dönmeyi bekleyen vaka tekrar sunulmaz. Önce hasta geri döner ve cevaplanır; hasta ötelenmez, kararlar iki kez işlenmez. Başka sunulacak vaka yoksa "Günün vakası" bölümü görünmez, yalnızca "Hasta geri geldi" kalır. Hasta cevaplandıktan sonra vaka (içerik azsa) tekrar sunulabilir; tekrar oynanınca yeni bir geri dönüş doğar.
+- **Geri dönüşün onayı:** `followUp` kendi `source`, `reviewedAt` ve `status` alanlarını taşır; vakanınkini miras almaz. Onaysız (taslak) veya bozuk geri dönüş oynanmaz ve mastery'ye katılmaz, ama vakanın kendisi oynanmaya devam eder.

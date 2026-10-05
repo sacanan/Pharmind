@@ -96,6 +96,9 @@ export const demoCase: PatientCase = {
   ],
   outcome: '[DEMO] Vaka kapandı. Bu metin yer tutucudur.',
   followUp: {
+    source: 'Yer tutucu (tıbbi bilgi içermez)',
+    reviewedAt: '2026-10-01',
+    status: 'demo',
     returns: {
       iyi: '[DEMO] Hasta geri geldi ve durumunun iyi gittiğini söylüyor. Bu metin yer tutucudur.',
       karisik: '[DEMO] Hasta geri geldi; durumu kısmen değişmiş. Bu metin yer tutucudur.',
