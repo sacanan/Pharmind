@@ -7,6 +7,7 @@ import { masteryMap } from '../core/mastery';
 import { sessionCells, todaysCells, type CellState } from '../core/session';
 import { completedToday, streakStatus, weekDays, weekStart, dayKey, weeklyProgress } from '../core/weekly';
 import { useStore } from '../state/progress-context';
+import { ActionRow } from '../ui/ActionRow';
 import { Blister } from '../ui/Blister';
 import { Button } from '../ui/Button';
 import { MasteryList } from '../ui/MasteryList';
@@ -83,42 +84,26 @@ export default function Home() {
         </View>
       ) : null}
 
-      {returning ? (
-        <View style={styles.section}>
-          <Text style={type.heading} accessibilityRole="header">
-            Hasta geri geldi
-          </Text>
-          <Text style={type.body}>{returning.case.title}</Text>
-          <Text style={type.small}>1 karar, yaklaşık 1 dakika.</Text>
-          <View style={styles.caseAction}>
-            <Button variant="secondary" label="Hastayı dinle" onPress={() => router.push('/followup')} />
-          </View>
-        </View>
-      ) : null}
-
-      {todaysCase ? (
-        <View style={styles.section}>
-          <Text style={type.heading} accessibilityRole="header">
-            Günün vakası
-          </Text>
-          {todaysCase.done ? (
-            <Text style={type.body}>Bugünkü vaka tamam. Yarın devam edebilirsin.</Text>
-          ) : (
-            <>
-              <Text style={type.body}>{todaysCase.case.title}</Text>
-              <Text style={type.small}>
-                {todaysCase.case.questionBudget} soru, {todaysCase.case.decisions.length} karar,
-                yaklaşık 3 dakika.
-              </Text>
-              <View style={styles.caseAction}>
-                <Button
-                  variant="secondary"
-                  label="Vakayı aç"
-                  onPress={() => router.push('/case')}
-                />
-              </View>
-            </>
-          )}
+      {returning || todaysCase ? (
+        <View style={styles.rows}>
+          {returning ? (
+            <ActionRow
+              title="Hasta geri geldi"
+              detail={`${returning.case.title}, 1 karar`}
+              action={{ label: 'Hastayı dinle', onPress: () => router.push('/followup') }}
+            />
+          ) : null}
+          {todaysCase ? (
+            todaysCase.done ? (
+              <ActionRow title="Günün vakası" detail="Tamam. Yarın devam edebilirsin." />
+            ) : (
+              <ActionRow
+                title="Günün vakası"
+                detail={`${todaysCase.case.title}, ${todaysCase.case.questionBudget} soru, ${todaysCase.case.decisions.length} karar`}
+                action={{ label: 'Vakayı aç', onPress: () => router.push('/case') }}
+              />
+            )
+          ) : null}
         </View>
       ) : null}
 
@@ -133,13 +118,10 @@ export default function Home() {
               <Text style={type.bodyStrong}>{streak.streak} haftalık seri</Text>
             ) : null}
             {usedFreezeLastWeek ? (
-              <Text style={type.body}>Geçen hafta dondurma hakkın kullanıldı, seri bozulmadı.</Text>
+              <Text style={type.body}>Geçen hafta dondurma hakkın kullanıldı.</Text>
             ) : null}
             <Text style={type.small}>
-              {streak.freezes} dondurma hakkı. Hedefi tutturamadığın haftada kendiliğinden kullanılır.
-              {streak.freezes < 2
-                ? ` Bir sonraki hak için ${streak.untilNextFreeze} başarılı hafta.`
-                : ''}
+              {streak.freezes} dondurma hakkı: hedefi tutturamadığın haftada kendiliğinden kullanılır.
             </Text>
           </View>
         ) : null}
@@ -183,6 +165,6 @@ const styles = StyleSheet.create({
   action: { marginTop: space.md },
   section: { marginTop: space.xl, gap: space.sm },
   streak: { gap: 4 },
-  caseAction: { marginTop: space.xs },
+  rows: { marginTop: space.lg },
   dev: { marginTop: space.xl, alignItems: 'flex-start' },
 });
