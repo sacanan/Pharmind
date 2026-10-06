@@ -9,6 +9,8 @@ export const colors = {
   ink: '#1A2428',
   inkSoft: '#4A585D',
   foil: '#C5CCCA',
+  /** Boş/seçilmemiş öğelerin çerçevesi: kâğıda karşı en az 3:1 (foil yalnızca süs ve dolgu için). */
+  edge: '#76858A',
   correct: '#137A55',
   wrong: '#C93A2F',
   attention: '#D18B14',

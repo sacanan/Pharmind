@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 999,
     borderWidth: 2,
-    borderColor: colors.foil,
+    borderColor: colors.edge,
   },
   dotDone: { backgroundColor: colors.ink, borderColor: colors.ink },
   dotToday: { borderColor: colors.ink, borderWidth: 3 },

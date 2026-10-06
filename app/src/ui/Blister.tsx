@@ -50,7 +50,9 @@ export function Blister({ cells, label }: Props) {
               state === 'current' ? styles.current : null,
             ]}
           >
-            {MARK[state] ? <Text style={styles.mark}>{MARK[state]}</Text> : null}
+            {MARK[state] ? (
+              <Text style={[styles.mark, state === 'shaky' && styles.markOnAmber]}>{MARK[state]}</Text>
+            ) : null}
           </View>
         );
       })}
@@ -69,7 +71,7 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderRadius: 999,
     borderWidth: 2,
-    borderColor: colors.foil,
+    borderColor: colors.edge,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -83,4 +85,6 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     color: colors.paper,
   },
+  // Beyaz yazı kehribarda yetersiz kontrast verir (2,8:1); koyu yazı 5,6:1.
+  markOnAmber: { color: colors.ink },
 });

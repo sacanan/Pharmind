@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: colors.foil,
+    borderColor: colors.edge,
   },
   optionSelected: { borderColor: colors.ink, borderWidth: 3, padding: 11 },
   optionPressed: { opacity: 0.75 },
