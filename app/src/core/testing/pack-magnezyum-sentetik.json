@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "id": "takviye-magnezyum-sentetik",
+  "idPrefix": "syn",
+  "topic": "takviye",
+  "title": "[SENTETİK] Magnezyum şema örneği (tıbbi içerik değildir)",
+  "concepts": [
+    { "id": "syn-formlar", "name": "Magnezyum (sentetik): formlar" },
+    { "id": "syn-etkilesim", "name": "Magnezyum (sentetik): etkileşimler" },
+    { "id": "syn-guvenlik", "name": "Magnezyum (sentetik): güvenlik" }
+  ],
+  "sources": [
+    { "id": "src-syn-etiket", "type": "etiket", "title": "[SENTETİK] Örnek ürün etiketi", "publisher": "Sentetik Yayıncı A" },
+    { "id": "src-syn-monograf", "type": "monograf", "title": "[SENTETİK] Örnek monograf", "publisher": "Sentetik Yayıncı B", "year": 2000 },
+    { "id": "src-syn-derleme", "type": "derleme", "title": "[SENTETİK] Örnek derleme", "publisher": "Sentetik Yayıncı C" }
+  ],
+  "claims": [
+    {
+      "id": "syn-c-001",
+      "kind": "formulasyon",
+      "text": "[SENTETİK] Sentetik madde X1, sentetik koşul Y1 altında sentetik sonuç Z1 verir. Tıbbi bir bilgi değildir.",
+      "evidence": "derleme",
+      "risk": "normal",
+      "sourceRefs": [{ "sourceId": "src-syn-derleme", "locator": "[SENTETİK] Bölüm 1", "quote": "[SENTETİK] sentetik alıntı 1" }],
+      "autoCheck": "beklemede"
+    },
+    {
+      "id": "syn-c-002",
+      "kind": "etkilesim",
+      "text": "[SENTETİK] Sentetik madde X2, sentetik madde X3 ile birlikte kullanıldığında sentetik etki Z2 görülür. Tıbbi bir bilgi değildir.",
+      "evidence": "etiket",
+      "risk": "yuksek",
+      "severity": "orta",
+      "action": "[SENTETİK] Sentetik eylem E1 uygulanır. Tıbbi bir öneri değildir.",
+      "sourceRefs": [
+        { "sourceId": "src-syn-etiket", "locator": "[SENTETİK] Bölüm 2", "quote": "[SENTETİK] sentetik alıntı 2" },
+        { "sourceId": "src-syn-monograf", "locator": "[SENTETİK] Tablo 1", "quote": "[SENTETİK] sentetik alıntı 3" }
+      ],
+      "autoCheck": "beklemede"
+    },
+    {
+      "id": "syn-c-003",
+      "kind": "kontrendikasyon",
+      "text": "[SENTETİK] Sentetik durum D1 varlığında sentetik madde X4 için sentetik uyarı W1 geçerlidir. Tıbbi bir bilgi değildir.",
+      "evidence": "kilavuz",
+      "risk": "yuksek",
+      "sourceRefs": [{ "sourceId": "src-syn-monograf", "locator": "[SENTETİK] Bölüm 3", "quote": "[SENTETİK] sentetik alıntı 4" }],
+      "autoCheck": "beklemede"
+    }
+  ],
+  "cards": [
+    {
+      "id": "syn-k-001",
+      "conceptIds": ["syn-formlar"],
+      "claimIds": ["syn-c-001"],
+      "prompt": "[SENTETİK] Sentetik koşul Y1 altında X1 ne verir?",
+      "options": ["Sentetik sonuç Z1", "Sentetik sonuç Z9", "Sentetik sonuç Z8"],
+      "correctIndex": 0,
+      "explanation": "[SENTETİK] Bu açıklama yalnızca şemayı göstermek içindir; tıbbi bilgi değildir.",
+      "source": "[SENTETİK] Sentetik test verisi",
+      "reviewedAt": "2026-11-01",
+      "status": "taslak",
+      "contentVersion": 1
+    },
+    {
+      "id": "syn-k-002",
+      "conceptIds": ["syn-etkilesim"],
+      "claimIds": ["syn-c-002"],
+      "prompt": "[SENTETİK] X2 ile X3 birlikte kullanılırsa ne görülür ve ne yapılır?",
+      "options": ["Etki Z2 görülür; eylem E1 uygulanır", "Etki görülmez", "Etki Z7 görülür; eylem yok"],
+      "correctIndex": 0,
+      "explanation": "[SENTETİK] Şiddet derecesi ve eylem iddiada tutulur; tıbbi bilgi değildir.",
+      "source": "[SENTETİK] Sentetik test verisi",
+      "reviewedAt": "2026-11-01",
+      "status": "taslak",
+      "contentVersion": 1
+    }
+  ],
+  "cases": [
+    {
+      "id": "syn-v-001",
+      "title": "[SENTETİK] Sentetik vaka",
+      "presentation": "[SENTETİK] Sentetik hasta sentetik bir istekle geliyor. Klinik bir durum anlatmaz.",
+      "questionBudget": 3,
+      "questions": [
+        { "id": "q1", "ask": "[SENTETİK] Sentetik kritik soru 1", "reply": "[SENTETİK] Sentetik cevap 1", "critical": true },
+        { "id": "q2", "ask": "[SENTETİK] Sentetik kritik soru 2", "reply": "[SENTETİK] Sentetik cevap 2", "critical": true },
+        { "id": "q3", "ask": "[SENTETİK] Sentetik soru 3", "reply": "[SENTETİK] Sentetik cevap 3", "critical": false },
+        { "id": "q4", "ask": "[SENTETİK] Sentetik soru 4", "reply": "[SENTETİK] Sentetik cevap 4", "critical": false }
+      ],
+      "decisions": [
+        {
+          "id": "d1",
+          "prompt": "[SENTETİK] Birinci sentetik karar",
+          "conceptIds": ["syn-formlar"],
+          "claimIds": ["syn-c-001"],
+          "options": [
+            { "text": "Seçenek A", "rating": "uygun", "rationale": "[SENTETİK] Sentetik gerekçe A", "consequence": "[SENTETİK] Sentetik sonuç A" },
+            { "text": "Seçenek B", "rating": "kabul", "rationale": "[SENTETİK] Sentetik gerekçe B", "consequence": "[SENTETİK] Sentetik sonuç B" },
+            { "text": "Seçenek C", "rating": "uygunDegil", "rationale": "[SENTETİK] Sentetik gerekçe C", "consequence": "[SENTETİK] Sentetik sonuç C" }
+          ]
+        },
+        {
+          "id": "d2",
+          "prompt": "[SENTETİK] İkinci sentetik karar",
+          "conceptIds": ["syn-etkilesim"],
+          "claimIds": ["syn-c-002"],
+          "options": [
+            { "text": "Seçenek A", "rating": "kabul", "rationale": "[SENTETİK] Sentetik gerekçe A", "consequence": "[SENTETİK] Sentetik sonuç A" },
+            { "text": "Seçenek B", "rating": "uygun", "rationale": "[SENTETİK] Sentetik gerekçe B", "consequence": "[SENTETİK] Sentetik sonuç B" }
+          ]
+        },
+        {
+          "id": "d3",
+          "prompt": "[SENTETİK] Üçüncü sentetik karar",
+          "conceptIds": ["syn-guvenlik"],
+          "claimIds": ["syn-c-003"],
+          "options": [
+            { "text": "Seçenek A", "rating": "uygunDegil", "rationale": "[SENTETİK] Sentetik gerekçe A", "consequence": "[SENTETİK] Sentetik sonuç A" },
+            { "text": "Seçenek B", "rating": "uygun", "rationale": "[SENTETİK] Sentetik gerekçe B", "consequence": "[SENTETİK] Sentetik sonuç B" }
+          ]
+        }
+      ],
+      "outcome": "[SENTETİK] Sentetik vaka kapandı.",
+      "followUp": {
+        "returns": {
+          "iyi": "[SENTETİK] Sentetik hasta döndü: iyi.",
+          "karisik": "[SENTETİK] Sentetik hasta döndü: karışık.",
+          "zayif": "[SENTETİK] Sentetik hasta döndü: zayıf."
+        },
+        "decision": {
+          "id": "f1",
+          "prompt": "[SENTETİK] Sentetik geri dönüş kararı",
+          "conceptIds": ["syn-formlar"],
+          "claimIds": ["syn-c-001"],
+          "options": [
+            { "text": "Seçenek A", "rating": "uygun", "rationale": "[SENTETİK] Sentetik gerekçe A", "consequence": "[SENTETİK] Sentetik sonuç A" },
+            { "text": "Seçenek B", "rating": "uygunDegil", "rationale": "[SENTETİK] Sentetik gerekçe B", "consequence": "[SENTETİK] Sentetik sonuç B" }
+          ]
+        },
+        "source": "[SENTETİK] Sentetik test verisi",
+        "reviewedAt": "2026-11-01",
+        "status": "taslak",
+        "contentVersion": 1
+      },
+      "source": "[SENTETİK] Sentetik test verisi",
+      "reviewedAt": "2026-11-01",
+      "status": "taslak",
+      "contentVersion": 1
+    }
+  ]
+}

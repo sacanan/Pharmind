@@ -1,0 +1,40 @@
+# --- Sırlar: API anahtarları ve ortam dosyaları ASLA commit'lenmez ---------------------------
+# Anahtarları (ör. ileride Gemini) bu dosyalardan birine koyun; hepsi yok sayılır.
+# Örnek dosya (.env.example) gerçek değer içermeden izlenebilir.
+.env
+.env.*
+!.env.example
+*.env
+secrets/
+*.pem
+*.key
+*.p8
+*.p12
+*.jks
+*.mobileprovision
+service-account*.json
+*credentials*.json
+
+# --- Yerel Claude Code ayarları (paylaşılan app/.claude/settings.json izlenmeye devam eder) -----
+.claude/settings.local.json
+app/.claude/settings.local.json
+
+# --- İçerik hattı ara çıktıları (henüz yok): ham model çıktısı ve telifli kaynak metinleri ------
+content/inbox/
+content/sources-cache/
+
+# --- Bağımlılıklar, derleme çıktıları, günlükler ---------------------------------------------
+node_modules/
+.expo/
+dist/
+web-build/
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+
+# --- İşletim sistemi ve editör ----------------------------------------------------------------
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

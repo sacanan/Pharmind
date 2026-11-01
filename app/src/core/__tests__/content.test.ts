@@ -8,7 +8,10 @@ import {
   playableCases,
 } from '../../content';
 import { demoCase } from '../../content/demo-case';
+import releaseLock from '../../content/release-lock.json';
+import { coreEntries } from '../contentHash';
 import { validateCard, validateCase } from '../validate';
+import { checkCoreStability, checkReleaseLock, validateReleaseLock, type ReleaseLock } from '../validate-pack';
 import type { Card, PatientCase } from '../types';
 
 const baseCard: Card = {
@@ -54,6 +57,26 @@ describe('gerçek içerik paketi', () => {
     for (const c of [...playableCards, ...playableCases]) {
       expect(['onaylı', 'demo']).toContain(c.status);
     }
+  });
+});
+
+describe('yayımlanmış içerik kilidi (release-lock.json)', () => {
+  it('kilit dosyası geçerli', () => {
+    expect(validateReleaseLock(releaseLock)).toEqual([]);
+  });
+
+  it('onaylı içeriğin doğru cevabı ve çekirdeği kilitle uyumlu', () => {
+    const current = coreEntries({ cards: allCards, cases: allCases });
+    expect(checkCoreStability(current, releaseLock as unknown as ReleaseLock)).toEqual([]);
+  });
+
+  it('onaylı içeriğin her kimliği kilitte kayıtlı ve eksiksiz (kilit tamlığı)', () => {
+    const current = coreEntries({ cards: allCards, cases: allCases });
+    expect(checkReleaseLock(current, releaseLock as unknown as ReleaseLock)).toEqual([]);
+  });
+
+  it('demo içerik kilitlenmez (serbestçe değişebilir)', () => {
+    expect(coreEntries({ cards: allCards, cases: allCases })).toEqual({});
   });
 });
 
@@ -116,6 +139,18 @@ describe('validateCase', () => {
     const c = clone();
     c.questionBudget = c.questions.length + 1;
     expect(validateCase(c)).toContain('soru bütçesi soru sayısından büyük');
+  });
+
+  it('kritik soru sayısı bütçeyi aşarsa yakalanır (tüm kritik sorular sorulamaz)', () => {
+    const c = clone();
+    c.questions.forEach((q) => (q.critical = true)); // 5 kritik soru, bütçe 3
+    expect(validateCase(c)).toContain('kritik soru sayısı soru bütçesini aşıyor');
+  });
+
+  it('kritik soru sayısı bütçeye eşitse geçerli', () => {
+    const c = clone();
+    c.questions.forEach((q, i) => (q.critical = i < c.questionBudget));
+    expect(validateCase(c)).toEqual([]);
   });
 
   it('"uygun" seçeneği olmayan karar yakalanır', () => {

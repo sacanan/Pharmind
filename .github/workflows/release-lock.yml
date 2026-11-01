@@ -1,0 +1,47 @@
+name: release-lock
+
+# Pull request'te release-lock.json yalnızca büyüyebilir: hedef daldaki (main) kayıtlar
+# silinemez veya değiştirilemez. Dosya hedef dalda yoksa boş kilit sayılır.
+# Zorunlu kontrol olarak kullanılacağından `paths` süzgeci YOKTUR: her PR'da çalışır, böylece
+# süzgece takılıp "Pending" kalmaz.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  compare-lock:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - run: npm ci
+
+      - name: Hedef daldaki kilidi al (yoksa dosya yazılmaz = boş kilit)
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git fetch --no-tags --depth=1 origin "$BASE_REF"
+          if git cat-file -e "origin/$BASE_REF:app/src/content/release-lock.json" 2>/dev/null; then
+            git show "origin/$BASE_REF:app/src/content/release-lock.json" > "$RUNNER_TEMP/base-release-lock.json"
+          else
+            echo "Hedef dalda release-lock.json yok: boş kilit kabul edilir."
+          fi
+
+      - name: Kilit yalnızca büyüyebilir (compareLocks)
+        env:
+          RELEASE_LOCK_CI: '1'
+          LOCK_BASE_FILE: ${{ runner.temp }}/base-release-lock.json
+        run: npx jest src/core/__tests__/release-lock-ci.test.ts
