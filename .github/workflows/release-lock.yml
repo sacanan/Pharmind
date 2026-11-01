@@ -45,3 +45,29 @@ jobs:
           RELEASE_LOCK_CI: '1'
           LOCK_BASE_FILE: ${{ runner.temp }}/base-release-lock.json
         run: npx jest src/core/__tests__/release-lock-ci.test.ts
+
+  # Tam kalite kapısı: bağımlılıklar, tür denetimi, lint ve tüm testler (app/ dizininde).
+  quality:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
