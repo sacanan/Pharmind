@@ -13,6 +13,112 @@ export interface Concept {
  */
 export type ContentStatus = 'taslak' | 'onaylı' | 'demo';
 
+/**
+ * İnsan (eczacı) onay kaydı. Bir öğenin veya iddianın o anki içeriğine bağlanır
+ * (`contentHash`, bkz. contentHash.ts); içerik sonradan değişirse eşleşmez ve onay düşer.
+ *
+ * UYARI: Bu bir kriptografik imza veya gerçek insan onayının kanıtı DEĞİLDİR. Kayıt metin olarak
+ * yazılabilir; yalnızca "onaydan sonra içerik kazara değişti mi" sorusunu yakalar. Onayın gerçekten
+ * bir insandan geldiğini güvence altına alan şey, bu kaydın yalnızca insan eliyle (kod incelemesiyle
+ * görülebilir bir değişiklikle) eklenmesi ve model çıktısında asla kabul edilmemesidir
+ * (bkz. validateDraftPack).
+ */
+export interface Review {
+  /** Onaylayan kişi */
+  by: string;
+  /** Onay tarihi, YYYY-MM-DD */
+  on: string;
+  /** Onaylanan içeriğin özeti (contentHash / claimHash) */
+  contentHash: string;
+}
+
+export type SourceType = 'etiket' | 'kilavuz' | 'monograf' | 'derleme' | 'calisma' | 'mevzuat';
+
+/** Kaynak kayıt defterindeki bir kaynak. İddialar kaynaklara `sourceRefs` ile bağlanır. */
+export interface Source {
+  id: string;
+  type: SourceType;
+  title: string;
+  publisher: string;
+  year?: number;
+  url?: string;
+  /** Kaynağa en son erişilen tarih, YYYY-MM-DD. Onaylı içerikte zorunlu. */
+  accessedAt?: string;
+}
+
+/** Bir iddianın dayandığı kaynak parçası. */
+export interface SourceRef {
+  sourceId: string;
+  /** Bölüm, tablo veya sayfa */
+  locator?: string;
+  /** Kaynaktan kısa, birebir alıntı (orijinal dilde) */
+  quote?: string;
+}
+
+export type ClaimKind =
+  | 'mekanizma'
+  | 'endikasyon'
+  | 'formulasyon'
+  | 'doz'
+  | 'etkilesim'
+  | 'yanetki'
+  | 'kontrendikasyon'
+  | 'mevzuat'
+  | 'diger';
+
+/** İddianın dayandığı kanıtın türü; yüksek riskte yalnızca 'etiket' veya 'kilavuz' kabul edilir. */
+export type EvidenceLevel = 'etiket' | 'kilavuz' | 'derleme' | 'calisma' | 'uzman';
+
+export type RiskTier = 'normal' | 'yuksek';
+
+export type Severity = 'hafif' | 'orta' | 'ciddi';
+
+/**
+ * OTOMATİK kaynak denetiminin sonucu (ileride araçlar yazar). İnsan onayı değildir:
+ * insan onayı yalnızca `Claim.review` ile temsil edilir. Model çıktısında hep 'beklemede' olmalıdır.
+ */
+export type AutoCheck = 'beklemede' | 'kaynak-eslesti' | 'itirazli';
+
+/** Kartların ve karar noktalarının dayandığı, tek başına doğrulanabilir bir bilimsel iddia. */
+export interface Claim {
+  id: string;
+  kind: ClaimKind;
+  text: string;
+  evidence: EvidenceLevel;
+  /** doz, etkilesim ve kontrendikasyon iddiaları her zaman 'yuksek' olmak zorundadır. */
+  risk: RiskTier;
+  /** Etkileşim iddialarında zorunlu: ne kadar ciddi */
+  severity?: Severity;
+  /** Etkileşim iddialarında zorunlu: ne yapılmalı */
+  action?: string;
+  sourceRefs: SourceRef[];
+  autoCheck: AutoCheck;
+  /** İnsan (eczacı) bilimsel onayı. */
+  review?: Review;
+}
+
+/**
+ * Konudan bağımsız içerik paketi (dermokozmetik, takviye vb.). Uygulamaya henüz yüklenmez;
+ * yalnızca doğrulayıcı ve testlerde kullanılır.
+ */
+export interface ContentPack {
+  schemaVersion: 1;
+  id: string;
+  /**
+   * Paketin öğrenme kimliği öneki (örn. "mgsyn"). Pakettaki kart ve vaka kimlikleri `<idPrefix>-`
+   * ile başlamak zorundadır; önek paketler arasında benzersizdir (bkz. validateCrossPackIds).
+   */
+  idPrefix: string;
+  /** Serbest metin konu etiketi ("dermokozmetik", "takviye" vb.); doğrulama kuralları konuya bağlı değildir. */
+  topic: string;
+  title: string;
+  concepts: Concept[];
+  sources: Source[];
+  claims: Claim[];
+  cards: Card[];
+  cases: PatientCase[];
+}
+
 /** Çoktan seçmeli kart. İleride diğer kart türleri eklenebilir. */
 export interface Card {
   id: string;
@@ -27,6 +133,12 @@ export interface Card {
   /** Son gözden geçirme tarihi, YYYY-MM-DD. */
   reviewedAt: string;
   status: ContentStatus;
+  /** Paket içeriğinde: bu kartın dayandığı iddialar (Claim.id). Eski/demo kartlarda yoktur. */
+  claimIds?: string[];
+  /** Paket içeriğinde: insan okunur revizyon sayacı (≥1). Bütünlük `review.contentHash` ile denetlenir. */
+  contentVersion?: number;
+  /** Paket içeriğinde: insan onay kaydı. Yalnızca 'onaylı' içerikte beklenir. */
+  review?: Review;
 }
 
 export type Confidence = 'sure' | 'unsure' | 'guess';
@@ -73,6 +185,8 @@ export interface CaseDecision {
   /** Karar kalitesi bu kavramların mastery'sini etkiler. */
   conceptIds: string[];
   options: CaseOption[];
+  /** Paket içeriğinde: bu kararın gerekçelerinin dayandığı iddialar (Claim.id). */
+  claimIds?: string[];
 }
 
 /** Vakadaki kararların genel kalitesi; hastanın geri dönüşünün hangi varyantla yazılacağını belirler. */
@@ -91,6 +205,8 @@ export interface CaseFollowUp {
   /** Son gözden geçirme tarihi, YYYY-MM-DD. */
   reviewedAt: string;
   status: ContentStatus;
+  contentVersion?: number;
+  review?: Review;
 }
 
 /** Günün vakası: kısa hasta, soru bütçesi, doğrusal 3 karar noktası ve sonuç. */
@@ -110,6 +226,8 @@ export interface PatientCase {
   /** Son gözden geçirme tarihi, YYYY-MM-DD. */
   reviewedAt: string;
   status: ContentStatus;
+  contentVersion?: number;
+  review?: Review;
 }
 
 /** Bir vakanın oynanış kaydı: sorulan sorular ve her karar noktasında seçilen seçenek. */
