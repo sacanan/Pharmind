@@ -1,7 +1,7 @@
 # Takviye ve gıda takviyesi: konu iskeleti (taslak)
 
 Durum: **taslak, Sadık onayı bekliyor.** Bu dosya yalnızca konu başlıklarıdır; klinik bilgi içermez.
-Not: `v1-spec.md` V1 kapsamını dermokozmetik olarak tanımlıyor. Bu iskelet onaylanırsa spesifikasyon güncellenmeli.
+Not: V1 kapsamı `v1-spec.md` içinde vitamin, mineral ve seçilmiş takviyeler olarak güncellendi (ilk konu magnezyum; dermokozmetik başlangıç kapsamı dışında). Bu iskelet konu havuzudur; hangi sırayla ele alınacağı ayrıca belirlenir.
 
 ## Her takviye için ortak şablon (her madde bir kavram, alt başlıklar kart grupları)
 

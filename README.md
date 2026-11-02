@@ -21,12 +21,14 @@ Uygulama iskeleti çalışıyor; **içerik henüz yok** (kartlar ve vaka tıbbi 
 
 Çalışanlar: Daily 5 (FSRS + güven seçimi), kavram bazında mastery, haftalık seri ve otomatik dondurma, günün vakası (soru bütçesi, 3 karar), "Hasta geri geldi". Veriler yalnızca cihazda saklanır (hesap ve sunucu yok).
 
-Eksikler: gerçek içerik ve içerik şeması (dermokozmetik Excel bekleniyor), kapalı beta, bildirimler, ACT/BUILD katmanları.
+İçerik altyapısı: konudan bağımsız içerik paketi şeması, doğrulayıcılar ve yayın kilidi hazır (Stage 1); paketler henüz uygulamaya yüklenmiyor ve uygulamada oynanamaz.
+
+Eksikler: gerçek içerik (ilk konu magnezyum), paket yükleyicisi, kapalı beta, bildirimler, ACT/BUILD katmanları.
 
 ## Yol haritası (V1)
 
 1. Zemin: içerik şeması (kavram, kart, vaka) ve teknoloji seçimi
-2. Dikey dilim: yalnızca dermokozmetik, Daily 5 (FSRS + güven seçimi)
+2. Dikey dilim: vitamin, mineral ve seçilmiş takviyeler (ilk konu magnezyum), Daily 5 (FSRS + güven seçimi)
 3. Vaka motoru: elle yazılmış vakalar, soru bütçesi
 4. Mastery haritası ve haftalık streak
 5. "Hasta geri geldi" mekaniği
@@ -61,8 +63,8 @@ Deneme ipuçları:
 ## Klasörler
 
 - `docs/`: Ürün ve mekanik spesifikasyonları
-- `content/`: Kavram, kart ve vaka içerikleri ve şemaları (henüz boş; şema Excel'e göre çıkarılacak)
-- `app/src/core/`: Arayüzden bağımsız mantık ve testleri (zamanlama, mastery, seri, vaka, depolama, içerik doğrulama)
+- `content/`: İçerik notları (henüz gerçek içerik yok; şema `app/src/core/types.ts` içinde)
+- `app/src/core/`: Arayüzden bağımsız mantık ve testleri (zamanlama, mastery, seri, vaka, depolama, içerik ve paket doğrulama)
 - `app/src/content/`: Uygulamaya gömülü içerik (şimdilik demo)
 - `app/src/state/`: İlerleme deposu (cihazda saklanır)
 - `app/src/ui/`, `app/src/app/`: Bileşenler ve ekranlar (Expo Router)
