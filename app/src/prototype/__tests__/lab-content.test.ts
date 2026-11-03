@@ -1,4 +1,4 @@
-import { LAB_ACTIVITIES, LAB_NOTICE } from '../lab-content';
+import { LAB_ACTIVITIES, LAB_NOTICE, LAB_SOURCE } from '../lab-content';
 import type { LabActivity } from '../types';
 
 const norm = (s: string): string => s.trim().toLowerCase().replace(/\s+/g, ' ');
@@ -63,5 +63,21 @@ describe('prototip test içeriği', () => {
   it('içerikte onay/doğrulama iddiası yok', () => {
     const all = LAB_ACTIVITIES.flatMap(visibleTexts).join(' ').toLowerCase();
     expect(all).not.toMatch(/onaylı|doğrulandı|eczacı onay/);
+  });
+
+  it('kaynak izlenebilir; inceleme yapılmadığı için inceleyen ve tarih boş', () => {
+    expect(LAB_SOURCE.url).toMatch(/^https:\/\/ods\.od\.nih\.gov\//);
+    expect(LAB_SOURCE.publisher).toContain('NIH');
+    expect(LAB_SOURCE.claimIds.length).toBeGreaterThan(0);
+    expect(LAB_SOURCE.reviewer).toBeNull();
+    expect(LAB_SOURCE.reviewedAt).toBeNull();
+    expect(LAB_SOURCE.status).toContain('bekliyor');
+  });
+
+  it('eşleştirmedeki karşılaştırma "küçük çalışmalarda" bağlamıyla verilir', () => {
+    const m = LAB_ACTIVITIES.find((a) => a.kind === 'match');
+    if (!m || m.kind !== 'match') throw new Error('eşleştirme etkinliği yok');
+    const comparison = m.pairs.find((p) => p.right.includes('biyoyararlı'));
+    expect(comparison?.left.toLowerCase()).toContain('küçük çalışmalarda');
   });
 });

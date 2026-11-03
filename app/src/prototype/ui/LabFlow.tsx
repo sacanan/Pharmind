@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Blister } from '../../ui/Blister';
@@ -23,14 +22,14 @@ import {
   type MatchSide,
   type MatchState,
 } from '../engine';
-import { LAB_ACTIVITIES } from '../lab-content';
+import { LAB_ACTIVITIES, LAB_SOURCE } from '../lab-content';
 import type { LabActivity, Outcome } from '../types';
 import { ChoiceView } from './ChoiceView';
 import { MatchView } from './MatchView';
 import { FeedbackPanel, NoticeBar } from './Parts';
 import { ResultView } from './ResultView';
 
-type Stage = 'intro' | 'play' | 'result';
+type Stage = 'intro' | 'play' | 'result' | 'closed';
 
 interface Pending {
   activityId: string;
@@ -41,10 +40,6 @@ interface Pending {
 
 const activities = LAB_ACTIVITIES;
 const MATCH_SEED_BASE = 1234;
-
-function leave() {
-  router.replace('/');
-}
 
 /**
  * M1 prototipinin tüm akışı: açılış, beş etkinlik, sonuç. Durum yalnızca bu bileşenin belleğindedir;
@@ -57,6 +52,8 @@ export function LabFlow() {
   const [pending, setPending] = useState<Pending | null>(null);
   const [match, setMatch] = useState<MatchState | null>(null);
 
+  const leave = () => setStage('closed');
+
   const begin = (nextRound: number) => {
     const fresh = startRun();
     setRound(nextRound);
@@ -65,6 +62,24 @@ export function LabFlow() {
     setMatch(prepare(currentActivity(activities, fresh), nextRound));
     setStage('play');
   };
+
+  if (stage === 'closed') {
+    return (
+      <Screen>
+        <NoticeBar />
+        <Text style={type.title} accessibilityRole="header">
+          Deneme kapatıldı
+        </Text>
+        <Text style={[type.body, styles.gap]}>
+          Bu, ayrı bir test prototipiydi; bu ekrandan gerçek uygulamaya geçiş yoktur. Gerçek uygulama
+          ilerleme kaydeden başka bir deneyimdir.
+        </Text>
+        <View style={styles.actions}>
+          <Button label="Baştan aç" onPress={() => setStage('intro')} />
+        </View>
+      </Screen>
+    );
+  }
 
   if (stage === 'intro') {
     return (
@@ -79,6 +94,9 @@ export function LabFlow() {
         </Text>
         <Text style={[type.small, styles.gap]}>
           Hiçbir şey kaydedilmez: ilerleme, puan veya tekrar zamanı yok.
+        </Text>
+        <Text style={[type.small, styles.gap]}>
+          Kaynak: {LAB_SOURCE.publisher}, {LAB_SOURCE.title}. Durum: {LAB_SOURCE.status}.
         </Text>
         <View style={styles.actions}>
           <Button label="Başla" onPress={() => begin(0)} />

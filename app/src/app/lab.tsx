@@ -1,14 +1,16 @@
 import { Redirect } from 'expo-router';
-import { LabFlow } from '../prototype/ui/LabFlow';
+import type { ComponentType } from 'react';
 
-// Expo derleme sırasında `process.env.EXPO_PUBLIC_*` ifadesini sabit değerle değiştirir.
 declare const process: { env: Record<string, string | undefined> };
+declare const require: (name: string) => { LabFlow: ComponentType };
 
 /**
- * M1 oyun prototipi. Yalnızca `EXPO_PUBLIC_LAB=1` ile derlenmiş yapıda açılır; aksi halde ana
- * sayfaya yönlendirir. Ana ekrandan bağlantı verilmez. Hiçbir ilerleme kaydına dokunmaz.
+ * Prototip rotası. Yalnızca `EXPO_PUBLIC_LAB=1` ile derlenen yapıda açılır. Bayrak derleme sırasında
+ * değere çevrildiği için bayraksız derlemede aşağıdaki `require` ölü koda düşer ve prototip kodu
+ * pakete hiç girmez (scripts/verify-lab-build.mjs bunu denetler). Bayrak bir erişim yetkisi değildir.
  */
 export default function Lab() {
   if (process.env.EXPO_PUBLIC_LAB !== '1') return <Redirect href="/" />;
+  const { LabFlow } = require('../prototype/ui/LabFlow');
   return <LabFlow />;
 }

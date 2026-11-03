@@ -161,4 +161,28 @@ describe('prototip izolasyonu (M1)', () => {
     expect(text).toContain("process.env.EXPO_PUBLIC_LAB !== '1'");
     expect(text).toContain('<Redirect href="/" />');
   });
+
+  it('kök yerleşim prototip rotasını ilerleme sağlayıcısının dışında tutar', () => {
+    const layout = fs.readFileSync(path.join(SRC, 'app', '_layout.tsx'), 'utf8');
+    expect(layout).toContain('isIsolatedLabRoute(process.env.EXPO_PUBLIC_LAB, pathname)');
+    expect(layout).toContain('<ProgressProvider>');
+  });
+
+  it('prototip, gerçek uygulamaya gezinti yapmaz (router kullanılmaz)', () => {
+    for (const file of LAB_ENTRIES) {
+      const text = fs.readFileSync(file, 'utf8');
+      expect({ file: rel(file), router: /\brouter\b/.test(text) && /router\.(replace|push|navigate)/.test(text) }).toEqual({
+        file: rel(file),
+        router: false,
+      });
+    }
+  });
+
+  it('Metro yapılandırması bayraksız derlemede prototipi ve /lab rotasını paketten çıkarır', () => {
+    const metro = fs.readFileSync(path.resolve(SRC, '..', 'metro.config.js'), 'utf8');
+    expect(metro).toContain("process.env.EXPO_PUBLIC_LAB !== '1'");
+    expect(metro).toContain('prototype');
+    expect(metro).toContain('lab');
+    expect(metro).toContain('blockList');
+  });
 });

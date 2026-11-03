@@ -10,6 +10,18 @@ import type { LabActivity } from './types';
  */
 export const LAB_NOTICE = 'TEST içeriği: onaysız, tıbbi bilgi olarak kullanılmaz.';
 
+/** Etkinliklerin dayandığı kaynak ve inceleme durumu. İnceleyen ve tarih yoktur: eczacı onayı verilmemiştir. */
+export const LAB_SOURCE = {
+  title: 'Magnesium – Health Professional Fact Sheet',
+  publisher: 'NIH Office of Dietary Supplements',
+  url: 'https://ods.od.nih.gov/factsheets/Magnesium-HealthProfessional/',
+  section: 'Sources of Magnesium > Dietary supplements',
+  claimIds: ['mgform-c-001', 'mgform-c-002'],
+  status: 'taslak, eczacı incelemesi bekliyor',
+  reviewer: null,
+  reviewedAt: null,
+} as const;
+
 export const LAB_ACTIVITIES: LabActivity[] = [
   {
     id: 'lab-mg-1',
@@ -48,11 +60,11 @@ export const LAB_ACTIVITIES: LabActivity[] = [
     prompt: 'Cümleleri tamamlayın.',
     pairs: [
       { left: 'Sıvıda iyi çözünen formların emilimi', right: 'genel olarak daha yüksektir' },
-      { left: 'Sitrat, oksit ve sülfata göre', right: 'daha biyoyararlı bulunmuştur' },
-      { left: 'Bu karşılaştırma', right: 'küçük çalışmalara dayanır' },
+      { left: 'Küçük çalışmalarda sitrat, oksit ve sülfata göre', right: 'daha biyoyararlı bulunmuştur' },
+      { left: 'Bu eğilimler', right: 'belirli bir ürünü tek başına tanımlamaz' },
     ],
     explain:
-      'Üçü de kaynağın özetinden. Hepsi genel eğilimdir; belirli bir ürünün emilim oranını vermez.',
+      'İlk ikisi kaynağın özetinden; üçüncüsü bir temkin notudur. Hepsi genel eğilimdir ve küçük çalışmalara dayanır; belirli bir ürünün emilim oranını vermez.',
   },
   {
     id: 'lab-mg-5',
