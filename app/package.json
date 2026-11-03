@@ -36,7 +36,10 @@
     "web": "expo start --web",
     "test": "jest",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "export:web": "node scripts/export-web.mjs --out dist",
+    "export:lab": "node scripts/export-web.mjs --lab --out dist-lab",
+    "verify:lab-build": "node scripts/verify-lab-build.mjs"
   },
   "private": true,
   "jest": {
