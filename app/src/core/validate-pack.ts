@@ -89,6 +89,7 @@ const ALLOWED_KEYS = {
     'source',
     'reviewedAt',
     'status',
+    'level',
     'claimIds',
     'contentVersion',
     'review',

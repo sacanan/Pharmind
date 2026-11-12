@@ -1,5 +1,6 @@
 import type { Card, Concept, ContentStatus, PatientCase } from '../core/types';
 import { decisionCards } from '../core/case';
+import { cardsOfLevel } from '../core/level';
 import { validateCard, validateCase, validateFollowUp } from '../core/validate';
 import { demoCards, demoConcepts } from './demo';
 import { demoCase } from './demo-case';
@@ -56,6 +57,16 @@ export const playableCases: PatientCase[] = allCases
  * Ana ekrandaki harita ve Daily 5 seçimi aynı listeyi kullanır.
  */
 export const masteryCards: Card[] = [...playableCards, ...decisionCards(playableCases)];
+
+/**
+ * Temel mastery'ye ve Daily 5'e giren içerik: yalnızca Temel kartlar ve vaka kararları (vaka kararları
+ * seviyesizdir = Temel). Görülmemiş Derinleş kartları Temel mastery'yi seyreltmez.
+ */
+export const temelPlayableCards: Card[] = cardsOfLevel(playableCards, 'temel');
+export const temelMasteryCards: Card[] = [...temelPlayableCards, ...decisionCards(playableCases)];
+
+/** Derinleş içeriği (oturum akışı sonraki PR'da). Temel mastery'ye katılmaz. */
+export const derinlesPlayableCards: Card[] = cardsOfLevel(playableCards, 'derinles');
 
 export const hasDemoContent: boolean =
   playableCards.some((c) => c.status === 'demo') || playableCases.some((c) => c.status === 'demo');

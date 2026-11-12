@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { masteryCards, playableCards } from '../content';
+import { temelMasteryCards, temelPlayableCards } from '../content';
 import { applyCase, applyFollowUp } from '../core/case';
 import { DAILY_SIZE, selectDaily } from '../core/daily';
 import { emptyProgress, reviewCard } from '../core/scheduling';
@@ -110,7 +110,7 @@ export function ProgressProvider({ children, paused = false }: { children: React
 
   const startSession = useCallback(() => {
     const now = new Date();
-    const cards = selectDaily(playableCards, latest.current, now, DAILY_SIZE, masteryCards);
+    const cards = selectDaily(temelPlayableCards, latest.current, now, DAILY_SIZE, temelMasteryCards);
     setSessionBoth({ day: dayKey(now), cardIds: cards.map((c) => c.id), results: [] });
   }, [setSessionBoth]);
 

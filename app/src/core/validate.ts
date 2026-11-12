@@ -30,6 +30,9 @@ export function validateCard(card: Card): string[] {
   const problems = validateCommon(card);
   if (!filled(card.id)) problems.push('kimlik boş');
   if (!filled(card.prompt)) problems.push('soru metni boş');
+  if (card.level !== undefined && card.level !== 'temel' && card.level !== 'derinles') {
+    problems.push('seviye "temel" veya "derinles" olmalı');
+  }
   // Taslakta açıklama boş olabilir (onaylıda zorunlu), ama metin olmak zorundadır.
   if (typeof card.explanation !== 'string') problems.push('açıklama metin olmalı');
   if (!Array.isArray(card.conceptIds) || card.conceptIds.length === 0) {

@@ -120,8 +120,18 @@ export interface ContentPack {
 }
 
 /** Çoktan seçmeli kart. İleride diğer kart türleri eklenebilir. */
+/**
+ * Kartın öğrenme seviyesi. Yoksa 'temel' sayılır (mevcut kartlar değişmez). Temel ve Derinleş mastery
+ * ayrı hesaplanır. Seviye öğrenme kimliğinin parçasıdır: yalnızca 'derinles' `coreHash`'e girer, yani
+ * onaylı bir kartın seviyesi değişirse YENİ KART KİMLİĞİ gerekir (eski kimlik emekli olur; ilerlemesi
+ * silinmez ama yetim kalır ve sayılmaz). Bkz. docs/product-decisions.md (M2-3).
+ */
+export type CardLevel = 'temel' | 'derinles';
+
 export interface Card {
   id: string;
+  /** Öğrenme seviyesi; yoksa 'temel'. */
+  level?: CardLevel;
   /** Bu kartın test ettiği kavramlar; cevap bu kavramların mastery skorunu etkiler. */
   conceptIds: string[];
   prompt: string;

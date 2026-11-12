@@ -31,7 +31,8 @@ import type {
  *    kilitlenir (bkz. validate-pack.ts): çekirdek değiştiyse YENİ KİMLİK verilir, eski kimlik
  *    emekli olur (kilitte kalır; ilerleme kaydı yetim kalır ve mastery/Daily 5 tarafından yok
  *    sayılır). Kapsam:
- *    - kart: soru, seçenek metinleri (sıradan bağımsız), doğru cevabın metni, `conceptIds`;
+ *    - kart: soru, seçenek metinleri (sıradan bağımsız), doğru cevabın metni, `conceptIds`, seviye
+ *      (yalnızca 'derinles' yazılır; 'temel' ve seviyesiz aynıdır);
  *    - vaka kararı: karar metni, seçenek metni + derecesi, `conceptIds` VE vakanın bağlamı
  *      (hasta sunumu, soru bütçesi, soruların kimliği/metni/cevabı/`critical` alanı);
  *    - geri dönüş: karar çekirdeği + üç anlatım (iyi/karışık/zayıf) + ANA VAKANIN bağlamı (sunum,
@@ -228,6 +229,9 @@ function cardCore(card: Card, claims: ClaimsById): unknown {
     answer: card.options[card.correctIndex],
     conceptIds: idList(card.conceptIds),
     claims: idList(card.claimIds).map((id) => claimCore(id, claims)),
+    // Seviye öğrenme kimliğinin parçasıdır (hangi mastery'ye saydığını belirler). Yalnızca 'derinles'
+    // yazılır: seviyesiz ve 'temel' kartların özeti, bu alan eklenmeden önceki özetle AYNIDIR.
+    ...(card.level === 'derinles' ? { level: 'derinles' } : {}),
   };
 }
 
