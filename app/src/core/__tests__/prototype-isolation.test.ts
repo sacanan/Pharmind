@@ -165,7 +165,7 @@ describe('prototip izolasyonu (M1)', () => {
   it('kök yerleşim prototip rotasını ilerleme sağlayıcısının dışında tutar', () => {
     const layout = fs.readFileSync(path.join(SRC, 'app', '_layout.tsx'), 'utf8');
     expect(layout).toContain('isIsolatedLabRoute(process.env.EXPO_PUBLIC_LAB, pathname)');
-    expect(layout).toContain('<ProgressProvider>');
+    expect(layout).toContain('<ProgressProvider paused={paused}>');
   });
 
   it('prototip, gerçek uygulamaya gezinti yapmaz (router kullanılmaz)', () => {
@@ -180,9 +180,17 @@ describe('prototip izolasyonu (M1)', () => {
 
   it('Metro yapılandırması bayraksız derlemede prototipi ve /lab rotasını paketten çıkarır', () => {
     const metro = fs.readFileSync(path.resolve(SRC, '..', 'metro.config.js'), 'utf8');
-    expect(metro).toContain("process.env.EXPO_PUBLIC_LAB !== '1'");
+    expect(metro).toContain("process.env.EXPO_PUBLIC_LAB === '1'");
+    expect(metro).toContain('if (!labFlag)');
     expect(metro).toContain('prototype');
     expect(metro).toContain('lab');
     expect(metro).toContain('blockList');
+  });
+
+  it('üretim derlemesinde bayrak yanlışlıkla açıksa Metro yapılandırması durur', () => {
+    const metro = fs.readFileSync(path.resolve(SRC, '..', 'metro.config.js'), 'utf8');
+    expect(metro).toContain("process.env.NODE_ENV === 'production'");
+    expect(metro).toContain("process.env.PHARMIND_LAB_BUILD !== '1'");
+    expect(metro).toContain('throw new Error');
   });
 });

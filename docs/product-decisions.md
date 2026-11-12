@@ -56,12 +56,19 @@ Güven bildirimi olmadan doğru/yanlış ve eşleştirme hatalarından `Hard/Goo
 ## M1 prototipinin sınırları
 
 - Prototip kodu `app/src/prototype/` ve `app/src/app/lab.tsx` altındadır. Mevcut `progress`, FSRS, mastery, XP, seri, depolama ve `release-lock` modüllerini içe aktaramaz (otomatik test).
-- **Sağlayıcı dışı çalışır:** kök yerleşim, bayrak açıkken `/lab` yolunda `ProgressProvider`'ı kurmaz; açılışta diskten ilerleme okunmaz ve yedek kaydı yazılmaz (`isIsolatedLabRoute`). Bu davranış, depolama çağrıları izlenen çalışma zamanı testleriyle sınanır (normal, mevcut ve bozuk kayıt dahil).
+- **Sağlayıcı duraklatılır, çıkarılmaz:** `ProgressProvider` kök yerleşimde her zaman aynı yerde kalır; bayrak açıkken `/lab` yolunda `paused` olur ve diskten okuma yapmaz (yedek yazma yolu da açılmaz). Sağlayıcıyı ağaçtan çıkarıp geri eklemek `Stack`'i yeniden kurar, gezinme yığınını ve süren oturumu sıfırlar; bu, gerçek Router ile yazılmış testle görüldü ve bu yüzden tasarım değişti. `progress-context.tsx`'e eklenen tek davranış `paused` özelliğidir.
 - **Gerçek uygulamaya çıkış yoktur:** "Çık/Kapat" demo içinde kalan bir kapanış ekranı açar. Gerçek uygulama ilerleme kaydeden ayrı bir deneyimdir; prototipten ona geçiş verilmez.
 - Hiçbir şey kalıcı değildir; sayfa yenilenince sıfırlanır.
-- **Bayraksız derlemede prototip pakette yoktur:** `metro.config.js`, `EXPO_PUBLIC_LAB=1` değilken `src/prototype` ve `/lab` rotasını Metro'dan gizler. `npm run verify:lab-build` açık → kapalı → açık → kapalı sırasıyla dört derleme yapıp paketi tarar; CI'da `web-build` iş akışı bunu her PR'da çalıştırır. Bayrak bir erişim yetkisi değildir; yalnızca derleme anahtarıdır.
-- Beş etkinlik onaysız test içeriğidir ve gerçek eğitim havuzuna (`playableCards`, `masteryCards`, `release-lock`) girmez. Kaynak (`LAB_SOURCE`) ve inceleme durumu izlenebilir; inceleyen ve tarih, eczacı onayı verilene kadar boştur.
+- **Bayraksız derlemede prototip pakette yoktur:** `metro.config.js`, `EXPO_PUBLIC_LAB=1` değilken `src/prototype` ve `/lab` rotasını Metro'dan gizler; bayraksız yapıda `/lab` "Unmatched Route" sayfasını açar (yönlendirme yoktur). Üretim (`NODE_ENV=production`) derlemesinde bayrak açıkken `npm run export:lab` dışında derleme **durur**; `export:web`, ortamda bayrak herhangi bir değerle ayarlıysa reddeder.
+- Beş etkinlik onaysız test içeriğidir ve gerçek eğitim havuzuna (`playableCards`, `masteryCards`, `release-lock`) girmez. `LAB_SOURCE` kaynağı ve inceleme durumunu izlenebilir tutar; bu üstveri **bilimsel onay değildir** (inceleyen ve tarih eczacı onayına kadar boştur).
+
+### Doğrulama kapsamı (ne kanıtlanır, ne kanıtlanmaz)
+
+- Jest: gerçek kök yerleşim + gerçek Expo Router + gerçek `ProgressProvider` ile `/lab` (boş, geçerli, bozuk kayıt); depolama çağrıları izlenir, hiçbiri olmamalıdır. Pozitif kontrol: aynı bozuk kayıt gerçek ana sayfada yedekleme yazar. Gerçek uygulama → `/lab` → geri akışında gezinme yığını ve oturum korunur. Taklit edilenler yalnızca depolama (AsyncStorage) ve yazı tipi yükleyicisidir.
+- `npm run verify:lab-build` (CI'da `web-build`): açık → kapalı → açık → kapalı dört web derlemesi. **Hepsi `--clear` kullanır; bu, önbellek temizlenmeden bayrak değişiminin güvenli olduğunu kanıtlamaz.** Çıktıdaki tüm metin dosyaları, `src/prototype` altındaki kod içi metin değişmezleri ve kimlikler için (ham ve `\uXXXX` kaçışlı) taranır; bayrak kapalıyken hiçbiri bulunmamalıdır. Başsız Chrome ile `/lab`: açıkken prototip görünür, kapalıyken görünmez.
+- **Android/iOS doğrulanmadı.** Tüm derleme ve tarayıcı denetimleri yalnızca web içindir.
+- Tarayıcı oynanışı (beş etkinlik) CI'da değil, yerel elle çalıştırılan bir tarayıcı denemesinde gözlendi.
 
 ### Önizleme derlemesi
 
-`npm run export:lab` (bayraklı) ve `npm run export:web` (bayraksız) `scripts/export-web.mjs` üzerinden çalışır; **`--clear` her zaman verilir**, çünkü Metro bayrağın değerini önbellekte tutar. Statik çıktı tek sayfa (`web.output: single`) olduğundan `/lab` yolunu `index.html`'e düşüren bir sunucu gerekir.
+`npm run export:lab` (bayraklı) ve `npm run export:web` (bayraksız) `scripts/export-web.mjs` üzerinden çalışır; **`--clear` her zaman verilir**. Statik çıktı tek sayfa (`web.output: single`) olduğundan `/lab` yolunu `index.html`'e düşüren bir sunucu gerekir.

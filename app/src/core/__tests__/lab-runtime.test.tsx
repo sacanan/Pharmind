@@ -36,10 +36,10 @@ jest.mock('@expo-google-fonts/schibsted-grotesk', () => ({
   SchibstedGrotesk_800ExtraBold: 1,
   useFonts: () => [true, null],
 }));
-const mockProviderMounts = jest.fn();
+const mockProviderPaused: boolean[] = [];
 jest.mock('../../state/progress-context', () => ({
-  ProgressProvider: ({ children }: { children?: unknown }) => {
-    mockProviderMounts();
+  ProgressProvider: ({ children, paused }: { children?: unknown; paused?: boolean }) => {
+    mockProviderPaused.push(!!paused);
     return children as never;
   },
 }));
@@ -101,31 +101,28 @@ describe('isIsolatedLabRoute', () => {
   });
 });
 
-describe('kök yerleşim: ilerleme sağlayıcısı', () => {
-  const withFlag = (flag: string | undefined, path: string): number => {
+describe('kök yerleşim (taklitli birim testi; gerçek Router için lab-router-integration.test.tsx)', () => {
+  const pausedFor = (flag: string | undefined, path: string): boolean | undefined => {
     const prev = process.env.EXPO_PUBLIC_LAB;
     if (flag === undefined) delete process.env.EXPO_PUBLIC_LAB;
     else process.env.EXPO_PUBLIC_LAB = flag;
     mockPath = path;
+    mockProviderPaused.length = 0;
     try {
       mount(<RootLayout />);
-      return mockProviderMounts.mock.calls.length;
+      return mockProviderPaused[mockProviderPaused.length - 1];
     } finally {
       if (prev === undefined) delete process.env.EXPO_PUBLIC_LAB;
       else process.env.EXPO_PUBLIC_LAB = prev;
-      mockProviderMounts.mockClear();
     }
   };
 
-  it('bayrak açık + /lab: sağlayıcı kurulmaz (diskten okuma yolu yok)', () => {
-    expect(withFlag('1', '/lab')).toBe(0);
-  });
-  it('bayrak açık + gerçek rota: sağlayıcı kurulur', () => {
-    expect(withFlag('1', '/')).toBeGreaterThan(0);
-  });
-  it('bayrak kapalı: /lab bile olsa sağlayıcı kurulur (rota zaten yok/yönlenir)', () => {
-    expect(withFlag(undefined, '/lab')).toBeGreaterThan(0);
-    expect(withFlag('0', '/lab')).toBeGreaterThan(0);
+  it('sağlayıcı her durumda kurulur; yalnızca bayrak açık + /lab iken duraklatılır', () => {
+    expect(pausedFor('1', '/lab')).toBe(true);
+    expect(pausedFor('1', '/')).toBe(false);
+    expect(pausedFor('1', '/session')).toBe(false);
+    expect(pausedFor(undefined, '/lab')).toBe(false);
+    expect(pausedFor('0', '/lab')).toBe(false);
   });
 });
 
@@ -203,7 +200,7 @@ describe('prototip akışı: baştan sona, depolama ve gezinti izlenerek', () =>
     expect(storageCalls()).toBe(0);
   });
 
-  it('yerleşim sağlayıcısı olmadan (lab rotası) akış çalışır ve sağlayıcı hiç kurulmaz', () => {
+  it('yerleşim ile birlikte akış çalışır ve depolamaya dokunmaz', () => {
     const prev = process.env.EXPO_PUBLIC_LAB;
     process.env.EXPO_PUBLIC_LAB = '1';
     try {
@@ -213,7 +210,6 @@ describe('prototip akışı: baştan sona, depolama ve gezinti izlenerek', () =>
       if (prev === undefined) delete process.env.EXPO_PUBLIC_LAB;
       else process.env.EXPO_PUBLIC_LAB = prev;
     }
-    expect(mockProviderMounts).not.toHaveBeenCalled();
     expect(storageCalls()).toBe(0);
   });
 });

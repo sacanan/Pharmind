@@ -38,7 +38,8 @@ export default function RootLayout() {
     </>
   );
 
-  // Prototip rotası ilerleme sağlayıcısı olmadan açılır: diskten okuma ve yedek yazma yolu yoktur.
-  if (isIsolatedLabRoute(process.env.EXPO_PUBLIC_LAB, pathname)) return content;
-  return <ProgressProvider>{content}</ProgressProvider>;
+  // Sağlayıcı ağaçta HER ZAMAN aynı yerde kalır (gezinme yığını ve süren oturum sıfırlanmaz). Prototip
+  // rotasında yalnızca duraklatılır: diskten okuma ve yedek yazma yolu açılmaz.
+  const paused = isIsolatedLabRoute(process.env.EXPO_PUBLIC_LAB, pathname);
+  return <ProgressProvider paused={paused}>{content}</ProgressProvider>;
 }

@@ -13,8 +13,17 @@ if (!out) {
 }
 
 const env = { ...process.env, CI: '1' };
-if (lab) env.EXPO_PUBLIC_LAB = '1';
-else delete env.EXPO_PUBLIC_LAB;
+if (lab) {
+  env.EXPO_PUBLIC_LAB = '1';
+  env.PHARMIND_LAB_BUILD = '1';
+} else {
+  // Üretim yolu: ortamda bayrak HERHANGİ bir değerle ayarlıysa sessizce silmek yerine durur.
+  if (process.env.EXPO_PUBLIC_LAB !== undefined) {
+    console.error('EXPO_PUBLIC_LAB ortamda ayarlı (' + process.env.EXPO_PUBLIC_LAB + '). Üretim derlemesi reddedildi; değişkeni kaldırın.');
+    process.exit(2);
+  }
+  delete env.PHARMIND_LAB_BUILD;
+}
 
 const r = spawnSync('npx', ['expo', 'export', '--clear', '--platform', 'web', '--output-dir', out], {
   env,
