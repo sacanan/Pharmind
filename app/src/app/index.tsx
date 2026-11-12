@@ -1,10 +1,18 @@
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
-import { concepts, hasDemoContent, playableCases, temelMasteryCards, temelPlayableCards } from '../content';
+import {
+  concepts,
+  derinlesMasteryCards,
+  derinlesPlayableCards,
+  hasDemoContent,
+  playableCases,
+  temelMasteryCards,
+  temelPlayableCards,
+} from '../content';
 import { pendingFollowUp, pickTodaysCase } from '../core/case';
 import { DAILY_SIZE } from '../core/daily';
 import { masteryMap } from '../core/mastery';
-import { homeCells, isSessionActive } from '../core/session';
+import { homeCells, isSessionActive, temelCompletedToday } from '../core/session';
 import { completedToday, streakStatus, weekDays, weekStart, dayKey, weeklyProgress } from '../core/weekly';
 import { useStore } from '../state/progress-context';
 import { ActionRow } from '../ui/ActionRow';
@@ -16,14 +24,16 @@ import { WeekDots } from '../ui/WeekDots';
 import { colors, fonts, space, type } from '../ui/theme';
 
 export default function Home() {
-  const { ready, progress, session, startSession, resetAll } = useStore();
+  const { ready, progress, session, derinlesSession, startSession, resetAll } = useStore();
   if (!ready) return null;
 
   const now = new Date();
   const done = completedToday(progress, now);
   const total = Math.min(DAILY_SIZE, temelPlayableCards.length);
   const inProgress = !!session && isSessionActive(session);
-  const cells = homeCells(session, progress, now, total || DAILY_SIZE, done);
+  // Günlük HEDEF (done) ile Temel oturumun durumu ayrıdır: hedef Derinleş ile de tamamlanabilir.
+  const temelDone = temelCompletedToday(session, progress, now, total);
+  const cells = homeCells(session, progress, now, total || DAILY_SIZE, temelDone);
 
   const week = weeklyProgress(progress, now);
   const streak = streakStatus(progress, now);
@@ -33,6 +43,7 @@ export default function Home() {
   const usedFreezeLastWeek = streak.frozenWeeks.includes(lastWeek);
   // Oynanabilir hiçbir içeriği olmayan kavram (örn. yalnızca taslak kartlarda geçen) gösterilmez.
   const mastery = masteryMap(concepts, temelMasteryCards, progress, now).filter((e) => e.cardCount > 0);
+  const derinlesMastery = masteryMap(concepts, derinlesMasteryCards, progress, now).filter((e) => e.cardCount > 0);
   const todaysCase = pickTodaysCase(playableCases, progress, now);
   const returning = pendingFollowUp(playableCases, progress, now);
 
@@ -55,26 +66,43 @@ export default function Home() {
 
       <View style={styles.hero}>
         <Text style={type.title} accessibilityRole="header">
-          {done ? 'Bugünkü oturum tamam' : 'Bugünkü oturum'}
+          {temelDone ? 'Bugünkü oturum tamam' : 'Bugünkü oturum'}
         </Text>
         <Text style={[type.body, styles.lead]}>
           {total === 0
             ? 'Henüz kart yok. İçerik eklenince burada görünecek.'
-            : done
+            : temelDone
               ? 'Yarın devam edebilirsin.'
               : inProgress
                 ? `${session.results.length} / ${session.cardIds.length} kart cevaplandı.`
                 : `${total} kart, yaklaşık 3 dakika.`}
         </Text>
+        {done && !temelDone ? (
+          <Text style={type.small}>Günlük hedef Derinleş ile tamamlandı. Temel oturum henüz tamamlanmadı.</Text>
+        ) : null}
       </View>
 
       <Blister cells={cells} />
 
-      {!done && total > 0 ? (
+      {!temelDone && total > 0 ? (
         <View style={styles.action}>
           <Button label={inProgress ? 'Oturuma devam et' : 'Oturumu başlat'} onPress={start} />
         </View>
       ) : null}
+
+      <View style={styles.rows}>
+        <ActionRow
+          title="Derinleş"
+          detail={
+            derinlesSession && isSessionActive(derinlesSession)
+              ? `Yarım oturum var: ${derinlesSession.results.length} / ${derinlesSession.cardIds.length} kart`
+              : derinlesPlayableCards.length > 0
+                ? 'Bir kavram seç, en fazla 5 derin soruyla çalış'
+                : 'Henüz içerik yok; bölüm açık'
+          }
+          action={{ label: 'Derinleş', onPress: () => router.push('/derinles') }}
+        />
+      </View>
 
       {returning || todaysCase ? (
         <View style={styles.rows}>
@@ -122,9 +150,18 @@ export default function Home() {
       {mastery.length > 0 ? (
         <View style={styles.section}>
           <Text style={type.heading} accessibilityRole="header">
-            Kavramlar
+            Temel kavramlar
           </Text>
           <MasteryList entries={mastery} />
+        </View>
+      ) : null}
+
+      {derinlesMastery.length > 0 ? (
+        <View style={styles.section}>
+          <Text style={type.heading} accessibilityRole="header">
+            Derinleş kavramları
+          </Text>
+          <MasteryList entries={derinlesMastery} />
         </View>
       ) : null}
 

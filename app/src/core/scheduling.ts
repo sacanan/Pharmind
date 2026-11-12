@@ -1,6 +1,6 @@
 import { createEmptyCard, fsrs } from 'ts-fsrs';
 import { POLICY_VERSION, decideGrade, toFsrsGrade } from './policy';
-import type { Card, PolicyGrade, Progress, ReviewRecordV2, SelfReport } from './types';
+import type { Card, PolicyGrade, Progress, ReviewRecordV2, SelfReport, SessionKind } from './types';
 
 /**
  * Günlük oturum mantığı: kısa öğrenme adımları (dakikalar) kapalıdır, aralıklar gün bazlıdır.
@@ -42,6 +42,7 @@ export function reviewCard(
   correct: boolean,
   selfReport: SelfReport,
   now: Date,
+  kind: SessionKind = 'temel',
 ): Progress {
   const grade = decideGrade({ correct, selfReport });
   const scheduled = scheduleCard(progress, card, grade, now);
@@ -53,6 +54,7 @@ export function reviewCard(
     optionCount: card.options.length,
     at: now.toISOString(),
     policy: { version: POLICY_VERSION, grade },
+    sessionKind: kind,
   };
   return { ...scheduled, history: [...progress.history, record].slice(-HISTORY_LIMIT) };
 }

@@ -9,12 +9,13 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { temelMasteryCards, temelPlayableCards } from '../content';
+import { derinlesMasteryCards, derinlesPlayableCards, temelMasteryCards, temelPlayableCards } from '../content';
+import { selectDerinles } from '../core/derinles';
 import { applyCase, applyFollowUp } from '../core/case';
 import { DAILY_SIZE, selectDaily } from '../core/daily';
 import { emptyProgress, reviewCard } from '../core/scheduling';
 import { loadProgress, saveProgress } from '../core/storage';
-import type { Card, CaseRun, PatientCase, Progress, SelfReport } from '../core/types';
+import type { Card, CaseRun, PatientCase, Progress, SelfReport, SessionKind } from '../core/types';
 import { dayKey, markSessionComplete } from '../core/weekly';
 
 /** Oturum içinde tutulan cevap (yeni kayıt türünün alt kümesi). */
@@ -25,6 +26,10 @@ interface SessionAnswer {
 }
 
 export interface Session {
+  /** Oturum türü: Günlük (Temel) veya Derinleş. */
+  kind: SessionKind;
+  /** Derinleş oturumunda seçilen kavram. */
+  conceptId?: string;
   /**
    * Oturumun BAŞLADIĞI gün (yerel, YYYY-MM-DD). Yalnızca bilgi içindir: oturumu geçersiz kılmaz,
    * günlük tamamlanmayı belirlemez. Gece yarısını geçen yarım oturum devam eder.
@@ -40,13 +45,21 @@ interface Store {
   /** Cihazdaki ilerleme okundu mu? */
   ready: boolean;
   progress: Progress;
+  /** Günlük (Temel) oturum. */
   session: Session | null;
+  /** Derinleş oturumu. Temel oturumdan ayrı, bellekte tutulur; biri diğerinin üzerine yazılmaz. */
+  derinlesSession: Session | null;
   startSession: () => void;
+  /**
+   * Seçilen kavram için Derinleş oturumu açar (mevcut Derinleş oturumunun yerine geçer; çağıran, yarım
+   * oturumu silmeden önce kullanıcıya sormakla yükümlüdür). Uygun kart yoksa oturum AÇILMAZ ve false döner.
+   */
+  startDerinlesSession: (conceptId: string) => boolean;
   /**
    * Oturumdaki sıradaki kartın cevabını işler. Sıradaki kart dışındaki (örn. aynı kartın hızlı çift
    * dokunuşuyla gelen ikinci) çağrılar yok sayılır: aynı cevap iki kez kaydedilmez.
    */
-  answer: (card: Card, correct: boolean, selfReport: SelfReport) => void;
+  answer: (card: Card, correct: boolean, selfReport: SelfReport, kind?: SessionKind) => void;
   /** Vakayı tamamlar: karar kalitesi ilgili kavramların mastery'sine işlenir. */
   completeCase: (c: PatientCase, run: CaseRun) => void;
   /** "Hasta geri geldi" kararını işler. */
@@ -65,15 +78,16 @@ const StoreContext = createContext<Store | null>(null);
 export function ProgressProvider({ children, paused = false }: { children: ReactNode; paused?: boolean }) {
   const [ready, setReady] = useState(false);
   const [progress, setProgress] = useState<Progress>(emptyProgress);
-  const [session, setSession] = useState<Session | null>(null);
+  const [sessions, setSessions] = useState<Record<SessionKind, Session | null>>({ temel: null, derinles: null });
   // Hızlı art arda çağrılarda eski değerle çalışmamak için son ilerleme burada da tutulur.
   const latest = useRef<Progress>(progress);
-  const sessionRef = useRef<Session | null>(null);
+  const sessionsRef = useRef<Record<SessionKind, Session | null>>({ temel: null, derinles: null });
   // Diskteki kayıt okunamadıysa boş ilerleme onun üzerine yazılmasın.
   const saveBlocked = useRef(false);
-  const setSessionBoth = useCallback((next: Session | null) => {
-    sessionRef.current = next;
-    setSession(next);
+  /** Yalnızca verilen türün oturumunu değiştirir; diğer tür korunur. */
+  const setSessionOf = useCallback((kind: SessionKind, next: Session | null) => {
+    sessionsRef.current = { ...sessionsRef.current, [kind]: next };
+    setSessions(sessionsRef.current);
   }, []);
 
   const mounted = useRef(true);
@@ -111,32 +125,49 @@ export function ProgressProvider({ children, paused = false }: { children: React
   const startSession = useCallback(() => {
     const now = new Date();
     const cards = selectDaily(temelPlayableCards, latest.current, now, DAILY_SIZE, temelMasteryCards);
-    setSessionBoth({ day: dayKey(now), cardIds: cards.map((c) => c.id), results: [] });
-  }, [setSessionBoth]);
+    setSessionOf('temel', { kind: 'temel', day: dayKey(now), cardIds: cards.map((c) => c.id), results: [] });
+  }, [setSessionOf]);
+
+  const startDerinlesSession = useCallback(
+    (conceptId: string): boolean => {
+      const now = new Date();
+      const cards = selectDerinles(derinlesPlayableCards, conceptId, latest.current, now, derinlesMasteryCards);
+      if (cards.length === 0) return false;
+      setSessionOf('derinles', {
+        kind: 'derinles',
+        conceptId,
+        day: dayKey(now),
+        cardIds: cards.map((c) => c.id),
+        results: [],
+      });
+      return true;
+    },
+    [setSessionOf],
+  );
 
   /**
    * Cevabı işler. Son kartın cevabı oturumu da aynı kayıtta tamamlar; böylece son
    * geri bildirim ekranında uygulamadan çıkılsa bile gün tamamlanmış sayılır.
    */
   const answer = useCallback(
-    (card: Card, correct: boolean, selfReport: SelfReport) => {
+    (card: Card, correct: boolean, selfReport: SelfReport, kind: SessionKind = 'temel') => {
       const now = new Date();
-      const current = sessionRef.current;
+      const current = sessionsRef.current[kind];
       // Senkron kontrol (ref): iki hızlı dokunuş aynı render'da gelse bile ikincisi sıradaki kart olmaktan çıkmıştır.
       if (current && current.cardIds[current.results.length] !== card.id) return;
-      let next = reviewCard(latest.current, card, correct, selfReport, now);
+      let next = reviewCard(latest.current, card, correct, selfReport, now, kind);
       const updated = current
         ? { ...current, results: [...current.results, { cardId: card.id, correct, selfReport }] }
         : current;
       let nextSession = updated;
-      if (updated && updated.results.length >= updated.cardIds.length) {
+      if (updated && updated.cardIds.length > 0 && updated.results.length >= updated.cardIds.length) {
         next = markSessionComplete(next, now);
         nextSession = { ...updated, completedDay: dayKey(now) };
       }
       commit(next);
-      setSessionBoth(nextSession);
+      setSessionOf(kind, nextSession);
     },
-    [commit, setSessionBoth],
+    [commit, setSessionOf],
   );
 
   const completeCase = useCallback(
@@ -154,16 +185,19 @@ export function ProgressProvider({ children, paused = false }: { children: React
   );
 
   const resetAll = useCallback(() => {
-    setSessionBoth(null);
+    setSessionOf('temel', null);
+    setSessionOf('derinles', null);
     commit(emptyProgress());
-  }, [commit, setSessionBoth]);
+  }, [commit, setSessionOf]);
 
   const value = useMemo<Store>(
     () => ({
       ready,
       progress,
-      session,
+      session: sessions.temel,
+      derinlesSession: sessions.derinles,
       startSession,
+      startDerinlesSession,
       answer,
       completeCase,
       completeFollowUp,
@@ -172,8 +206,9 @@ export function ProgressProvider({ children, paused = false }: { children: React
     [
       ready,
       progress,
-      session,
+      sessions,
       startSession,
+      startDerinlesSession,
       answer,
       completeCase,
       completeFollowUp,
