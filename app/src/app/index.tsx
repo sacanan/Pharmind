@@ -4,7 +4,7 @@ import { concepts, hasDemoContent, masteryCards, playableCards, playableCases } 
 import { pendingFollowUp, pickTodaysCase } from '../core/case';
 import { DAILY_SIZE } from '../core/daily';
 import { masteryMap } from '../core/mastery';
-import { sessionCells, todaysCells, type CellState } from '../core/session';
+import { homeCells, isSessionActive } from '../core/session';
 import { completedToday, streakStatus, weekDays, weekStart, dayKey, weeklyProgress } from '../core/weekly';
 import { useStore } from '../state/progress-context';
 import { ActionRow } from '../ui/ActionRow';
@@ -22,16 +22,8 @@ export default function Home() {
   const now = new Date();
   const done = completedToday(progress, now);
   const total = Math.min(DAILY_SIZE, playableCards.length);
-  const inProgress =
-    !!session && session.day === dayKey(now) && session.results.length < session.cardIds.length;
-
-  const cells: CellState[] = inProgress
-    ? sessionCells(session.cardIds.length, session.results).map((c) =>
-        c === 'current' ? 'pending' : c,
-      )
-    : done
-      ? todaysCells(progress, now, total || DAILY_SIZE)
-      : Array<CellState>(total || DAILY_SIZE).fill('pending');
+  const inProgress = !!session && isSessionActive(session);
+  const cells = homeCells(session, progress, now, total || DAILY_SIZE, done);
 
   const week = weeklyProgress(progress, now);
   const streak = streakStatus(progress, now);

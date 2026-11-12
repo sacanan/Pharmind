@@ -66,12 +66,20 @@ Bu belge geliştirme sürecinin **bağlayıcı ürün ilkelerini** kaydeder. Tek
 
 **Vaka (THINK) kararları değişmedi:** FSRS derecesi karar seçeneğinin içerik tanımlı derecesinden gelir (uygun → Good, kabul → Hard, uygun değil → Again); kart cevabı politikasına bağlı değildir ve geçmişe kayıt yazılmaz.
 
+## M2-2: günlük tamamlanma ve gece yarısı (kullanıcı kararlarıyla)
+
+- **Gün, tamamlayan son cevabın yerel gününe yazılır** (`answer` → `markSessionComplete`, `progress-context.tsx`). Tek çağrı noktası ve idempotent `markSessionComplete` korunur; yeni katman veya kaynak alanı yoktur. Derinleş gelince aynı fonksiyon kullanılacak; gün bir kez sayılır.
+- **Gece yarısını geçen yarım oturum devam eder.** Ana ekran artık `session.day` ile karşılaştırmaz (`isSessionActive`, `core/session.ts`); ana sayfaya dönmek oturumu kaybettirmez. `Session.day` yalnızca başlangıç gününü bilgi olarak taşır.
+- **Blister:** Devam eden oturumda tüm oturum cevapları (bellekteki `session.results`; geçmişten "son N kayıt" alınmaz). Tamamlanan oturum, bellekteki `Session.completedDay` (tamamlayan cevabın günü) bugünse ana sayfada tüm cevaplarıyla görünür; önceki gün tamamlanmış oturum ertesi günün blister'ı olmaz. Gün her değerlendirmede `now` ile hesaplanır; zamanlayıcı yoktur.
+- **Bilinen sınır (kabul edildi):** Oturum bellekte tutulur, kalıcı değildir. Uygulama yeniden açılınca blister yalnızca o güne ait geçmiş kayıtlarından kurulur (`todaysCells`); gece yarısını geçmiş bir oturumda önceki güne ait cevaplar görünmez. Yarım oturum kalıcılığı eklenmedi. Gece yarısını geçen ve hiç tamamlanmayan oturum, uygulama kapanana veya yeni oturum başlatılana kadar "devam ediyor" görünür.
+- Mevcut kayıtlara kaynak/gün alanı eklenmedi; `Progress` ve geçmiş kayıtları değişmedi.
+
 ### Sonraki M2 PR'ları için kararlar (kodlanmadı)
 
 - **`Card.level`:** Alan olarak ekleyip `coreHash`'e dahil etme yönü uygun bulundu; ancak alanın tek başına yeni öğrenme kimliği oluşturduğu varsayılmaz. Kimlik, yeniden sınıflandırma ve mevcut ilerleme politikası kodlamadan önce açıklanacak.
 - **Derinleş seti:** Beş kartlık set yalnızca adaydır. Beşten az uygun kart olduğunda ne olacağı tanımlanmadan sabitlenmez.
 - **Vakalar** şimdilik günlük hedefi tamamlamaz.
-- **Gece yarısı:** "Tamamlayan cevabın günü sayılır" kararı, mevcut kodun oturumu geçersiz sayma davranışı (`session.day === dayKey(now)` ana ekranda) incelenmeden uygulanmaz.
+- **Gece yarısı:** M2-2'de kararlaştırıldı ve uygulandı (yukarıya bakın).
 - **Yarım oturumun kalıcılaştırılması** M2-1 dışındadır.
 
 ## Eski: FSRS değerlendirme politikası notu (M0)

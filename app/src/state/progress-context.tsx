@@ -25,10 +25,15 @@ interface SessionAnswer {
 }
 
 export interface Session {
-  /** Oturumun başladığı gün (yerel, YYYY-MM-DD); gün değişince eski oturum geçersiz sayılır. */
+  /**
+   * Oturumun BAŞLADIĞI gün (yerel, YYYY-MM-DD). Yalnızca bilgi içindir: oturumu geçersiz kılmaz,
+   * günlük tamamlanmayı belirlemez. Gece yarısını geçen yarım oturum devam eder.
+   */
   day: string;
   cardIds: string[];
   results: SessionAnswer[];
+  /** Oturumu tamamlayan son cevabın yerel günü (günlük tamamlanmanın yazıldığı gün). Kalıcı değildir. */
+  completedDay?: string;
 }
 
 interface Store {
@@ -123,11 +128,13 @@ export function ProgressProvider({ children, paused = false }: { children: React
       const updated = current
         ? { ...current, results: [...current.results, { cardId: card.id, correct, selfReport }] }
         : current;
+      let nextSession = updated;
       if (updated && updated.results.length >= updated.cardIds.length) {
         next = markSessionComplete(next, now);
+        nextSession = { ...updated, completedDay: dayKey(now) };
       }
       commit(next);
-      setSessionBoth(updated);
+      setSessionBoth(nextSession);
     },
     [commit, setSessionBoth],
   );
