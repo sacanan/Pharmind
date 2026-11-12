@@ -1,4 +1,4 @@
-import type { Confidence, PolicyGrade, ReviewRecord, SelfReport } from './types';
+import type { Confidence, PolicyGrade, ReviewRecord, SelfReport, SessionKind } from './types';
 
 const CONFIDENCES: readonly string[] = ['sure', 'unsure', 'guess'];
 const SELF_REPORTS: readonly string[] = ['guess', 'none'];
@@ -34,7 +34,8 @@ export function parseRecord(x: unknown): ReviewRecord | null {
     !isObject(policy) ||
     typeof policy.version !== 'string' ||
     typeof policy.grade !== 'string' ||
-    !GRADES.includes(policy.grade)
+    !GRADES.includes(policy.grade) ||
+    (x.sessionKind !== undefined && x.sessionKind !== 'temel' && x.sessionKind !== 'derinles')
   ) {
     return null;
   }
@@ -60,4 +61,12 @@ export function isShakyRight(a: AnswerLike): boolean {
 /** "Emin olduğu halde yanlış": YALNIZCA eski (V1) güven bildirimlerinden hesaplanabilir. */
 export function isLegacyConfidentError(a: AnswerLike): boolean {
   return !a.correct && a.selfReport === undefined && a.confidence === 'sure';
+}
+
+/**
+ * Kaydın oturum türü. OKUMA kuralı: `sessionKind` yoksa Temel'dir (V1 kayıtlar ve türün yazılmadığı
+ * eski V2 kayıtlar dahil). Eski kayıtlara alan eklenmez; yalnızca okurken bu varsayım yapılır.
+ */
+export function recordKind(r: ReviewRecord): SessionKind {
+  return r.recordVersion === 2 && r.sessionKind === 'derinles' ? 'derinles' : 'temel';
 }

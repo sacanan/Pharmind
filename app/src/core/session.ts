@@ -1,5 +1,5 @@
-import { isLegacyConfidentError, isShakyRight, type AnswerLike } from './records';
-import type { Progress } from './types';
+import { isLegacyConfidentError, isShakyRight, recordKind, type AnswerLike } from './records';
+import type { Progress, SessionKind } from './types';
 import { dayKey } from './weekly';
 
 /**
@@ -25,11 +25,11 @@ export function sessionCells(total: number, results: Answer[]): CellState[] {
   });
 }
 
-/** Bugün cevaplanan son `size` kartın durumu; kalan gözler boş. Ana ekran için. */
-export function todaysCells(progress: Progress, now: Date, size: number): CellState[] {
+/** Bugün cevaplanan son `size` kartın durumu; kalan gözler boş. Ana ekran için. Yalnızca `kind` türündeki kayıtlar. */
+export function todaysCells(progress: Progress, now: Date, size: number, kind: SessionKind = 'temel'): CellState[] {
   const today = dayKey(now);
   const todays = progress.history
-    .filter((r) => dayKey(new Date(r.at)) === today)
+    .filter((r) => recordKind(r) === kind && dayKey(new Date(r.at)) === today)
     .slice(-size)
     .map(cellFor);
   return [...todays, ...Array<CellState>(size - todays.length).fill('pending')];
@@ -88,7 +88,7 @@ export function homeCells(
   progress: Progress,
   now: Date,
   size: number,
-  doneToday: boolean,
+  temelDone: boolean,
 ): CellState[] {
   if (session && isSessionActive(session)) {
     return sessionCells(session.cardIds.length, session.results).map((c) => (c === 'current' ? 'pending' : c));
@@ -96,6 +96,31 @@ export function homeCells(
   if (session && session.completedDay === dayKey(now)) {
     return sessionCells(session.cardIds.length, session.results);
   }
-  if (doneToday) return todaysCells(progress, now, size);
+  if (temelDone) return todaysCells(progress, now, size, 'temel');
   return Array<CellState>(size).fill('pending');
+}
+
+/**
+ * Günlük (Temel) oturum bugün tamamlandı mı? Günlük HEDEFTEN (`completedToday`) ayrıdır: hedef bir
+ * Derinleş oturumuyla da tamamlanabilir, Temel yine de yarım kalır.
+ * - Bellekteki Temel oturum bugün tamamlandıysa: evet.
+ * - Aksi halde (örn. uygulama yeniden açıldı; oturum bellekte yok) geçmişten türetilir: bugünün Temel
+ *   kayıtları günlük oturum boyutuna ulaştıysa evet; ulaşmadıysa YALNIZCA hedef tamam ve bugün hiç
+ *   Derinleş kaydı yoksa evet (örn. gece yarısını geçen Temel oturum; Derinleş öncesi veriler dahil).
+ *   Hem Temel hem Derinleş bugün varsa ve Temel kayıtları boyuta ulaşmadıysa Temel tamamlanmamış sayılır
+ *   (kullanıcıya Temel yeniden sunulur; bilinen, bilerek seçilmiş sınır). Eski (türsüz) kayıtlar Temel sayılır.
+ */
+export function temelCompletedToday(
+  session: SessionView | null,
+  progress: Progress,
+  now: Date,
+  size: number,
+): boolean {
+  if (session && session.completedDay === dayKey(now)) return true;
+  const today = dayKey(now);
+  const todays = progress.history.filter((r) => dayKey(new Date(r.at)) === today);
+  const temel = todays.filter((r) => recordKind(r) === 'temel').length;
+  if (size > 0 && temel >= size) return true;
+  const goalDone = progress.completedDays.includes(today);
+  return goalDone && temel > 0 && !todays.some((r) => recordKind(r) === 'derinles');
 }

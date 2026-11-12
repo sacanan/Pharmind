@@ -1,9 +1,9 @@
-import { Redirect, router } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { playableCards } from '../content';
 import { sessionCells, summarize } from '../core/session';
-import type { SelfReport } from '../core/types';
+import type { SelfReport, SessionKind } from '../core/types';
 import { weeklyProgress } from '../core/weekly';
 import { useStore } from '../state/progress-context';
 import { Blister } from '../ui/Blister';
@@ -23,7 +23,11 @@ interface Feedback {
 }
 
 export default function SessionScreen() {
-  const { ready, progress, session, answer } = useStore();
+  const params = useLocalSearchParams<{ kind?: string }>();
+  const kind: SessionKind = params.kind === 'derinles' ? 'derinles' : 'temel';
+  const store = useStore();
+  const { ready, progress, answer } = store;
+  const session = kind === 'derinles' ? store.derinlesSession : store.session;
   const [guess, setGuess] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
 
@@ -32,7 +36,7 @@ export default function SessionScreen() {
   const allDone = total > 0 && answered >= total && feedback === null;
 
   if (!ready) return null;
-  if (!session || total === 0) return <Redirect href="/" />;
+  if (!session || total === 0) return <Redirect href={kind === 'derinles' ? '/derinles' : '/'} />;
 
   const cells = sessionCells(total, session.results);
 
@@ -45,7 +49,7 @@ export default function SessionScreen() {
         <Legend />
         <View style={styles.block}>
           <Text style={type.title} accessibilityRole="header">
-            Oturum tamamlandı
+            {kind === 'derinles' ? 'Derinleş oturumu tamamlandı' : 'Oturum tamamlandı'}
           </Text>
           <Text style={type.body}>
             {summary.total} kartta {summary.right} doğru.
@@ -112,7 +116,7 @@ export default function SessionScreen() {
   // Tek dokunuş cevabı verir. İşaret yalnızca bu cevap için geçerlidir; sonraki kartta sıfırlanır.
   const submit = (selected: number) => {
     const correct = selected === card.correctIndex;
-    answer(card, correct, guess ? 'guess' : 'none');
+    answer(card, correct, guess ? 'guess' : 'none', kind);
     setFeedback({ cardId: card.id, selected, correct, selfReport: guess ? 'guess' : 'none' });
     setGuess(false);
   };

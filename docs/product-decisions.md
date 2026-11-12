@@ -85,10 +85,22 @@ Bu belge geliştirme sürecinin **bağlayıcı ürün ilkelerini** kaydeder. Tek
 - **Mevcut ilerleme:** hiçbir zaman silinmez veya sessizce başka anlama taşınmaz. Emekli kimliğin ilerleme kaydı cihazda yetim kalır ve mastery/Daily tarafından sayılmaz (mevcut davranış). Yeni kimlik sıfırdan başlar; ilerlemeyi bilerek taşıma bir sonraki bir karardır ve bu PR'da yoktur.
 - Onay özeti (`contentHash`) seviye değişince de değişir: seviye değişikliği yeniden onay gerektirir.
 
+## M2-4: Derinleş oturumu
+
+**Ürün tercihleri (kullanıcı kararı; bilimsel olarak doğrulanmış ölçüt DEĞİL):** Derinleş girişi her zaman görünür ve tıklanabilir (kilit/zorunluluk yok); içerik yoksa açıklayıcı boş durum. Kavramı kullanıcı seçer (otomatik öneri yok). Oturum, seçilen kavramın Derinleş kartlarından en fazla 5 farklı kart (1–4 kart varsa eldeki kartlarla; sayı başlamadan gösterilir; 0 kartta oturum açılmaz, gün tamamlanmaz). Seçilen setin tamamını cevaplamak günlük hedefi karşılar; doğruluk şartı yoktur. Seçim `selectDaily` mantığını yeniden kullanır (`core/derinles.ts`).
+
+**Oturumlar:** Temel ve Derinleş oturumları bellekte AYRI tutulur (`progress-context.tsx`): biri diğerini silmez. Aynı türde başka kavrama geçmek yarım Derinleş oturumunu sessizce silmez; kullanıcı "devam et", "vazgeç" veya "yeni oturumu başlat, yarım oturum silinsin" seçer. Kalıcı oturum saklama yok (uygulama yeniden açılınca yarım oturumlar kaybolur; önceki sınır aynen sürer).
+
+**Günlük hedef ≠ Temel oturum durumu:** İki tür de aynı `markSessionComplete` ile günü yazar; aynı gün tek giriş kalır. Derinleş ile hedef tamamlanınca yarım Temel oturum sürdürülebilir ve "tamam" gösterilmez (`temelCompletedToday`, `core/session.ts`).
+
+**Kayıt türü:** Yeni V2 kayıtlara `sessionKind: 'temel' | 'derinles'` yazılır. **Okuma kuralı:** `sessionKind` yoksa Temel kabul edilir (V1 ve türsüz V2); eski kayıtlara alan eklenmez, anlamları değişmez (`recordKind`, `core/records.ts`). Geçersiz tür değerli kayıt atlanır. 500 kayıt sınırı aynıdır. Yeniden açılışta Temel blister ve Temel tamamlanma yalnızca Temel kayıtlardan türetilir.
+
+**Bilinen sınırlar:** (1) Yeniden açılışta, aynı gün hem Derinleş hem Temel kaydı varsa ve Temel kayıtları günlük oturum boyutuna (5) ulaşmadıysa Temel "tamamlanmamış" sayılır ve yeniden sunulur (gece yarısını geçen Temel oturum + aynı gün Derinleş bileşimi; bilinçli, muhafazakâr seçim). (2) Derinleş mastery yalnızca Derinleş kartlarından hesaplanır; ustalık unvanı eşikleri ve XP yok. (3) Üretim içeriğinde henüz Derinleş kartı yok: ana ekranda sahte ilerleme gösterilmez, sentetik kartlar yalnızca testlerdedir.
+
 ### Sonraki M2 PR'ları için kararlar (kodlanmadı)
 
 - **`Card.level`:** M2-3'te uygulandı; kimlik ve yeniden sınıflandırma tanımı yukarıda.
-- **Derinleş seti:** Beş kartlık set yalnızca adaydır. Beşten az uygun kart olduğunda ne olacağı tanımlanmadan sabitlenmez.
+- **Derinleş seti:** M2-4'te tanımlandı (en fazla 5; az kartla geçerli oturum; yukarıya bakın).
 - **Vakalar** şimdilik günlük hedefi tamamlamaz.
 - **Gece yarısı:** M2-2'de kararlaştırıldı ve uygulandı (yukarıya bakın).
 - **Yarım oturumun kalıcılaştırılması** M2-1 dışındadır.

@@ -67,6 +67,8 @@ export const temelMasteryCards: Card[] = [...temelPlayableCards, ...decisionCard
 
 /** Derinleş içeriği (oturum akışı sonraki PR'da). Temel mastery'ye katılmaz. */
 export const derinlesPlayableCards: Card[] = cardsOfLevel(playableCards, 'derinles');
+/** Derinleş mastery'sine giren içerik (Temel mastery'den ayrı). */
+export const derinlesMasteryCards: Card[] = derinlesPlayableCards;
 
 export const hasDemoContent: boolean =
   playableCards.some((c) => c.status === 'demo') || playableCases.some((c) => c.status === 'demo');

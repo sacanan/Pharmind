@@ -181,6 +181,9 @@ export interface ReviewRecordV1 {
  * gereken girdiler (`correct`, `selfReport`, `optionCount`) birlikte saklanır.
  * Bu kayıt, geçmişin eksiksiz yeniden oynatılabileceği anlamına GELMEZ (geçmiş sınırlıdır; bkz. HISTORY_LIMIT).
  */
+/** Oturum türü: Günlük (Temel) oturum veya Derinleş oturumu. */
+export type SessionKind = 'temel' | 'derinles';
+
 export interface ReviewRecordV2 {
   recordVersion: 2;
   cardId: string;
@@ -191,6 +194,12 @@ export interface ReviewRecordV2 {
   /** ISO zaman damgası */
   at: string;
   policy: { version: string; grade: PolicyGrade };
+  /**
+   * Cevabın verildiği oturum türü (M2-4'ten itibaren yeni kayıtlara AÇIKÇA yazılır). Bu alan olmayan
+   * kayıtlar (V1 ve daha önce yazılmış V2) Temel kabul edilir: bu bir OKUMA kuralıdır, eski kayıtlara
+   * alan yazılmaz (bkz. recordKind).
+   */
+  sessionKind?: SessionKind;
 }
 
 export type ReviewRecord = ReviewRecordV1 | ReviewRecordV2;
