@@ -62,7 +62,7 @@ Bu belge geliştirme sürecinin **bağlayıcı ürün ilkelerini** kaydeder. Tek
 
 **Geçmiş sınırı:** `HISTORY_LIMIT = 500` korunur. Kayıtta politika sürümü bulunması, geçmişin eksiksiz yeniden oynatılabileceği anlamına **gelmez**: eski kayıtlar silinir ve kartların FSRS durumu eski (güven tabanlı) ve yeni politikayla karışık hesaplanmıştır; geçmişten yeniden türetilemez. Tam yeniden hesaplama ve saklama mimarisi ayrı bir karardır (bu PR'da yok).
 
-**Özetler:** "emin olduğu halde yanlış" (`legacyConfidentErrors`) yalnızca eski V1 güven bildirimlerinden hesaplanır; yeni cevaplardan türetilmez ve oturum ekranında artık gösterilmez. Blister: ✓ doğru, ? doğru + tahmin işaretli (eski kayıtlarda kararsız/tahmin), ✕ yanlış.
+**Özetler:** "emin olduğu halde yanlış" (`legacyConfidentErrors`) yalnızca eski V1 güven bildirimlerinden hesaplanır; yeni cevaplardan türetilmez ve oturum ekranında artık gösterilmez. Blister: ✓ doğru, ? doğru ama işaretli (yeni "Tahmin ettim" ya da eski kararsız/tahmin bildirimi; ekran okuyucu açıklaması ikisini birbirine eşitlemez), ✕ yanlış.
 
 **Vaka (THINK) kararları değişmedi:** FSRS derecesi karar seçeneğinin içerik tanımlı derecesinden gelir (uygun → Good, kabul → Hard, uygun değil → Again); kart cevabı politikasına bağlı değildir ve geçmişe kayıt yazılmaz.
 
