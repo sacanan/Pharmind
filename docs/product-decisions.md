@@ -74,9 +74,20 @@ Bu belge geliştirme sürecinin **bağlayıcı ürün ilkelerini** kaydeder. Tek
 - **Bilinen sınır (kabul edildi):** Oturum bellekte tutulur, kalıcı değildir. Uygulama yeniden açılınca blister yalnızca o güne ait geçmiş kayıtlarından kurulur (`todaysCells`); gece yarısını geçmiş bir oturumda önceki güne ait cevaplar görünmez. Yarım oturum kalıcılığı eklenmedi. Gece yarısını geçen ve hiç tamamlanmayan oturum, uygulama kapanana veya yeni oturum başlatılana kadar "devam ediyor" görünür.
 - Mevcut kayıtlara kaynak/gün alanı eklenmedi; `Progress` ve geçmiş kayıtları değişmedi.
 
+## M2-3: Temel / Derinleş ayrımı (veri modeli ve mastery)
+
+**Yapılan:** `Card.level?: 'temel' | 'derinles'` (yok = Temel). Ana ekran mastery haritası ve Daily 5 yalnızca Temel içeriği (`temelPlayableCards`, `temelMasteryCards`, `content/index.ts`) kullanır. Derinleş içeriği (`derinlesPlayableCards`) ayrıdır ve Temel mastery'ye katılmaz; görülmemiş Derinleş kartları Temel'i seyreltmez (`level.test.ts` karşı kanıtıyla). Derinleş oturumu, arayüzü, XP ve rozet bu PR'da yok; mevcut tüm kartlar seviyesiz, yani Temel'dir, davranış aynıdır.
+
+**Öğrenme kimliği ve yeniden sınıflandırma (tanım):**
+- Kart kimliği ilerlemenin anahtarıdır. Seviye, kartın hangi mastery'ye saydığını belirler; bu yüzden **öğrenme kimliğinin parçasıdır**. Seviye alanını hash'e eklemek tek başına yeni kimlik üretmez; kimliği üreten, onaylı kartta çekirdek değişince **yeni kart kimliği verilmesi** kuralıdır (mevcut `release-lock` kontrolü).
+- `coreHash` seviyeyi yalnızca `'derinles'` ise yazar. Seviyesiz ve `'temel'` kartların çekirdek özeti, bu PR'dan önceki özetle **aynıdır** (testle kilitli): mevcut onaylı kimlikler ve kilit etkilenmez.
+- **Yeniden sınıflandırma** (Temel ↔ Derinleş) onaylı kartta çekirdek değişikliğidir: aynı kimlikle yapılırsa kilit kontrolü başarısız olur. Doğru yol yeni kimliktir; eski kimlik emekli olur ve kilitte kalır.
+- **Mevcut ilerleme:** hiçbir zaman silinmez veya sessizce başka anlama taşınmaz. Emekli kimliğin ilerleme kaydı cihazda yetim kalır ve mastery/Daily tarafından sayılmaz (mevcut davranış). Yeni kimlik sıfırdan başlar; ilerlemeyi bilerek taşıma bir sonraki bir karardır ve bu PR'da yoktur.
+- Onay özeti (`contentHash`) seviye değişince de değişir: seviye değişikliği yeniden onay gerektirir.
+
 ### Sonraki M2 PR'ları için kararlar (kodlanmadı)
 
-- **`Card.level`:** Alan olarak ekleyip `coreHash`'e dahil etme yönü uygun bulundu; ancak alanın tek başına yeni öğrenme kimliği oluşturduğu varsayılmaz. Kimlik, yeniden sınıflandırma ve mevcut ilerleme politikası kodlamadan önce açıklanacak.
+- **`Card.level`:** M2-3'te uygulandı; kimlik ve yeniden sınıflandırma tanımı yukarıda.
 - **Derinleş seti:** Beş kartlık set yalnızca adaydır. Beşten az uygun kart olduğunda ne olacağı tanımlanmadan sabitlenmez.
 - **Vakalar** şimdilik günlük hedefi tamamlamaz.
 - **Gece yarısı:** M2-2'de kararlaştırıldı ve uygulandı (yukarıya bakın).
