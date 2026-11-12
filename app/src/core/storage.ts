@@ -1,4 +1,5 @@
 import type { Card as FsrsCard } from 'ts-fsrs';
+import { parseRecord } from './records';
 import { emptyProgress } from './scheduling';
 import type { Progress } from './types';
 
@@ -46,7 +47,13 @@ function parseProgress(raw: string | null): Progress | null {
     return {
       version: 1,
       cards,
-      history: Array.isArray(data.history) ? data.history : [],
+      // Geçerli kayıtlar AYNEN korunur (V1'e alan eklenmez); geçersiz veya tanınmayan türdekiler atlanır.
+      history: Array.isArray(data.history)
+        ? (data.history as unknown[]).flatMap((r) => {
+            const rec = parseRecord(r);
+            return rec ? [rec] : [];
+          })
+        : [],
       completedDays: Array.isArray(data.completedDays) ? data.completedDays : [],
       // Vaka özelliğinden önce kaydedilmiş ilerlemede bu alan yoktur.
       caseResults:

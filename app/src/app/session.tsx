@@ -3,11 +3,12 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { playableCards } from '../content';
 import { sessionCells, summarize } from '../core/session';
-import type { Confidence } from '../core/types';
+import type { SelfReport } from '../core/types';
 import { weeklyProgress } from '../core/weekly';
 import { useStore } from '../state/progress-context';
 import { Blister } from '../ui/Blister';
 import { Button } from '../ui/Button';
+import { GuessToggle } from '../ui/GuessToggle';
 import { Option } from '../ui/Option';
 import { Screen } from '../ui/Screen';
 import { colors, space, type } from '../ui/theme';
@@ -18,18 +19,12 @@ interface Feedback {
   cardId: string;
   selected: number;
   correct: boolean;
-  confidence: Confidence;
+  selfReport: SelfReport;
 }
-
-const CONFIDENCE_CHOICES: { value: Confidence; label: string }[] = [
-  { value: 'sure', label: 'Eminim' },
-  { value: 'unsure', label: 'Kararsızım' },
-  { value: 'guess', label: 'Tahmin ettim' },
-];
 
 export default function SessionScreen() {
   const { ready, progress, session, answer } = useStore();
-  const [selected, setSelected] = useState<number | null>(null);
+  const [guess, setGuess] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
 
   const total = session?.cardIds.length ?? 0;
@@ -56,12 +51,7 @@ export default function SessionScreen() {
             {summary.total} kartta {summary.right} doğru.
           </Text>
           {summary.shaky > 0 ? (
-            <Text style={type.body}>{summary.shaky} doğru cevabından emin değildin.</Text>
-          ) : null}
-          {summary.confidentErrors > 0 ? (
-            <Text style={type.body}>
-              {summary.confidentErrors} kartta emin olduğun halde yanlış yaptın.
-            </Text>
+            <Text style={type.body}>{summary.shaky} doğru cevabı tahmin olarak işaretledin.</Text>
           ) : null}
         </View>
         <Text style={[type.heading, styles.block]}>
@@ -78,8 +68,7 @@ export default function SessionScreen() {
     const card = playableCards.find((c) => c.id === feedback.cardId);
     if (!card) return <Redirect href="/" />;
     const isLast = answered >= total;
-    const confidentError = !feedback.correct && feedback.confidence === 'sure';
-    const shakyRight = feedback.correct && feedback.confidence !== 'sure';
+    const flaggedRight = feedback.correct && feedback.selfReport === 'guess';
     return (
       <Screen>
         <TopBar cells={cells} />
@@ -99,17 +88,10 @@ export default function SessionScreen() {
             Doğru cevap: {LETTERS[card.correctIndex]}, {card.options[card.correctIndex]}
           </Text>
           <Text style={type.body}>{card.explanation}</Text>
-          {confidentError ? (
+          {flaggedRight ? (
             <View style={styles.note}>
               <Text style={type.body}>
-                Emin olduğun bir cevap yanlıştı. Bu kart yakında yeniden karşına çıkacak.
-              </Text>
-            </View>
-          ) : null}
-          {shakyRight ? (
-            <View style={styles.note}>
-              <Text style={type.body}>
-                Doğru bildin ama emin değildin. Bu kart daha sık karşına çıkacak.
+                Tahmin ettiğini belirttin. Bu kartı biraz daha erken yeniden göstereceğiz.
               </Text>
             </View>
           ) : null}
@@ -127,12 +109,12 @@ export default function SessionScreen() {
   const card = playableCards.find((c) => c.id === session.cardIds[answered]);
   if (!card) return <Redirect href="/" />;
 
-  const submit = (confidence: Confidence) => {
-    if (selected === null) return;
+  // Tek dokunuş cevabı verir. İşaret yalnızca bu cevap için geçerlidir; sonraki kartta sıfırlanır.
+  const submit = (selected: number) => {
     const correct = selected === card.correctIndex;
-    answer(card, correct, confidence);
-    setFeedback({ cardId: card.id, selected, correct, confidence });
-    setSelected(null);
+    answer(card, correct, guess ? 'guess' : 'none');
+    setFeedback({ cardId: card.id, selected, correct, selfReport: guess ? 'guess' : 'none' });
+    setGuess(false);
   };
 
   return (
@@ -143,32 +125,21 @@ export default function SessionScreen() {
           {card.prompt}
         </Text>
       </View>
-      <View style={styles.options} accessibilityRole="radiogroup">
+      <View style={styles.options}>
         {card.options.map((option, i) => (
           <Option
             key={i}
             letter={LETTERS[i]}
             text={option}
-            selected={selected === i}
-            onPress={() => setSelected(i)}
+            selected={false}
+            immediate
+            onPress={() => submit(i)}
           />
         ))}
       </View>
-      {selected !== null ? (
-        <View style={styles.block}>
-          <Text style={type.heading}>Ne kadar eminsin?</Text>
-          <View style={styles.choices}>
-            {CONFIDENCE_CHOICES.map((choice) => (
-              <Button
-                key={choice.value}
-                variant="secondary"
-                label={choice.label}
-                onPress={() => submit(choice.value)}
-              />
-            ))}
-          </View>
-        </View>
-      ) : null}
+      <View style={styles.block}>
+        <GuessToggle checked={guess} onToggle={() => setGuess((g) => !g)} />
+      </View>
     </Screen>
   );
 }
@@ -187,8 +158,8 @@ function TopBar({ cells }: { cells: ReturnType<typeof sessionCells> }) {
 /** Blister gözlerindeki işaretlerin anlamı. Her öğe tek parça kalır, satır ortasından bölünmez. */
 function Legend() {
   const items = [
-    { mark: '✓', label: 'doğru ve emin' },
-    { mark: '?', label: 'doğru ama kararsız' },
+    { mark: '✓', label: 'doğru' },
+    { mark: '?', label: 'doğru, tahmin işaretli' },
     { mark: '✕', label: 'yanlış' },
   ];
   return (
@@ -214,7 +185,6 @@ const styles = StyleSheet.create({
   block: { marginTop: space.lg, gap: space.xs },
   legend: { flexDirection: 'row', flexWrap: 'wrap', columnGap: space.sm, rowGap: 4, marginTop: space.sm },
   options: { marginTop: space.md, gap: 12 },
-  choices: { marginTop: space.xs, gap: 8 },
   note: {
     marginTop: space.xs,
     borderLeftWidth: 4,

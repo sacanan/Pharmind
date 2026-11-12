@@ -28,7 +28,7 @@ function memoryStore(initial: Record<string, string> = {}) {
 
 describe('bozuk kayıt dayanıklılığı', () => {
   it('tek bozuk kart girdisi tüm ilerlemeyi götürmez, diğer kartlar korunur', () => {
-    const good = reviewCard(emptyProgress(), card, true, 'sure', NOW);
+    const good = reviewCard(emptyProgress(), card, true, 'none', NOW);
     const raw = JSON.parse(serializeProgress(good));
     raw.cards.bozuk = null;
     raw.cards.tarihsiz = { stability: 1 };
@@ -59,7 +59,7 @@ describe('bozuk kayıt dayanıklılığı', () => {
   });
 
   it('sağlam kayıt yedeklenmez', async () => {
-    const good = reviewCard(emptyProgress(), card, true, 'sure', NOW);
+    const good = reviewCard(emptyProgress(), card, true, 'none', NOW);
     const store = memoryStore({ [PROGRESS_KEY]: serializeProgress(good) });
     const p = await loadProgress(store);
     expect(p.cards.c1.reps).toBe(1);

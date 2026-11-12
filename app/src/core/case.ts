@@ -1,14 +1,15 @@
-import { reviewCard } from './scheduling';
+import { scheduleCard } from './scheduling';
 import type {
   Card,
   CaseDecision,
-  CaseTier,
-  ContentStatus,
   CaseOption,
   CaseQuestion,
   CaseRun,
+  CaseTier,
+  ContentStatus,
   DecisionRating,
   PatientCase,
+  PolicyGrade,
   Progress,
 } from './types';
 import { dayKey } from './weekly';
@@ -128,6 +129,15 @@ export function decisionCards(cases: PatientCase[]): Card[] {
 }
 
 /**
+ * Vaka kararının FSRS derecesi karar seçeneğinin klinik derecelendirmesinden gelir (içerik tanımlı);
+ * kullanıcı bildirimine veya deneysel kart-cevap politikasına (policy.ts) bağlı DEĞİLDİR.
+ * uygun → Good, kabul → Hard, uygun değil → Again.
+ */
+function caseGrade(rating: DecisionRating): PolicyGrade {
+  return rating === 'uygun' ? 'Good' : rating === 'kabul' ? 'Hard' : 'Again';
+}
+
+/**
  * Vakayı tamamlar: her karar noktasının kalitesi o karar "kartı"nın FSRS durumunu günceller
  * (uygun → Good, kabul → Hard, uygun değil → Again) ve oynanış kaydedilir.
  * Vaka günlük oturum hedefine (completedDays) sayılmaz.
@@ -144,13 +154,11 @@ export function applyCase(
     const card = cards[i];
     const option = c.decisions[i]?.options[choice];
     if (!card || !option) return;
-    const rating = option.rating;
-    next = reviewCard(next, card, rating !== 'uygunDegil', rating === 'uygun' ? 'sure' : 'unsure', now);
+    next = scheduleCard(next, card, caseGrade(option.rating), now);
   });
   return {
     ...next,
-    // Karar kayıtları, ana ekrandaki günlük 5'lik blister geçmişine karışmasın.
-    history: progress.history,
+    // Vaka kararları geçmişe (günlük 5'lik blister kayıtlarına) yazılmaz.
     caseResults: { ...progress.caseResults, [c.id]: { ...run, at: now.toISOString() } },
   };
 }
@@ -245,17 +253,9 @@ export function applyFollowUp(
   const option = c.followUp?.decision.options[choice];
   if (!c.followUp || !result || result.followUp || !option) return progress;
   const card = toCard(c.followUp, followUpCardId(c.id), c.followUp.decision);
-  const rating = option.rating;
-  const reviewed = reviewCard(
-    progress,
-    card,
-    rating !== 'uygunDegil',
-    rating === 'uygun' ? 'sure' : 'unsure',
-    now,
-  );
+  const reviewed = scheduleCard(progress, card, caseGrade(option.rating), now);
   return {
     ...reviewed,
-    history: progress.history,
     caseResults: {
       ...progress.caseResults,
       [c.id]: { ...result, followUp: { choice, at: now.toISOString() } },

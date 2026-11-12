@@ -7,16 +7,18 @@ interface Props {
   text: string;
   selected: boolean;
   onPress: () => void;
+  /** Dokunmak cevabı hemen verir (seçip onaylamak yerine); ekran okuyucuya düğme olarak bildirilir. */
+  immediate?: boolean;
 }
 
 /** Harfli, seçilebilir cevap satırı. Kart ve vaka ekranlarında ortak kullanılır. */
-export function Option({ letter, text, selected, onPress }: Props) {
+export function Option({ letter, text, selected, onPress, immediate = false }: Props) {
   const [focused, setFocused] = useState(false);
   return (
     <Pressable
-      accessibilityRole="radio"
+      accessibilityRole={immediate ? 'button' : 'radio'}
       accessibilityLabel={`${letter}, ${text}`}
-      accessibilityState={{ selected }}
+      accessibilityState={immediate ? undefined : { selected }}
       onPress={onPress}
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}

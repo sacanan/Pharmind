@@ -21,11 +21,15 @@ const MARK: Partial<Record<CellState, string>> = {
   shaky: '?',
 };
 
-function describe(cells: CellState[]): string {
+/**
+ * "?" gözü iki farklı kaynaktan gelir: yeni "Tahmin ettim" işareti ve eski (V1) "kararsız" bildirimi.
+ * İkisi aynı şey değildir; bu yüzden açıklama yalnızca ortak olanı söyler (doğru ama işaretli).
+ */
+export function describe(cells: CellState[]): string {
   const count = (s: CellState) => cells.filter((c) => c === s).length;
   const parts = [
     `${count('correct')} doğru`,
-    `${count('shaky')} kararsız doğru`,
+    `${count('shaky')} doğru ama işaretli (tahmin ettim ya da eski kararsız bildirimi)`,
     `${count('wrong')} yanlış`,
     `${count('pending') + count('current')} bekliyor`,
   ];

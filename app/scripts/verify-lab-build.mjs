@@ -20,19 +20,30 @@ const fail = (m) => failures.push(m);
 function sourceFiles(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
     const full = join(dir, e.name);
-    if (e.isDirectory()) return e.name === '__tests__' ? [] : sourceFiles(full);
+    if (e.isDirectory()) return e.name === '__tests__' || e.name === 'test-support' ? [] : sourceFiles(full);
     return /\.tsx?$/.test(e.name) ? [full] : [];
   });
 }
-const literals = new Set();
-for (const file of sourceFiles('src/prototype')) {
-  // Açıklama satırları pakete girmez; yalnızca kod içindeki metin değişmezleri taranır.
-  const text = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/\s\/\/\s.*$/gm, '');
-  for (const m of text.matchAll(/(['"`])((?:\\.|(?!\1)[^\\\n])+)\1/g)) {
-    const v = m[2];
-    if (v.length >= 12 && (v.includes(' ') || v.startsWith('lab-')) && !v.includes('${')) literals.add(v);
+function collectLiterals(files) {
+  const out = new Set();
+  for (const file of files) {
+    // Açıklama satırları pakete girmez; yalnızca kod içindeki metin değişmezleri taranır.
+    const text = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/\s\/\/\s.*$/gm, '');
+    for (const m of text.matchAll(/(['"`])((?:\\.|(?!\1)[^\\\n])+)\1/g)) {
+      const v = m[2];
+      if (v.length >= 12 && (v.includes(' ') || v.startsWith('lab-')) && !v.includes('${')) out.add(v);
+    }
   }
+  return out;
 }
+const literals = collectLiterals(sourceFiles('src/prototype'));
+// Gerçek (prototip dışı) uygulamanın da kullandığı ortak metinler (örn. "Tahmin ettim (isteğe bağlı)")
+// bayrak kapalıyken zaten pakette bulunur; prototip sızıntısı kanıtı olamazlar, taramadan çıkarılır.
+const sharedFiles = readdirSync('src', { withFileTypes: true }).filter((e) => e.isDirectory() && e.name !== 'prototype').flatMap((e) => sourceFiles(join('src', e.name)));
+const shared = collectLiterals(sharedFiles);
+const excludedShared = [...literals].filter((v) => shared.has(v));
+for (const v of excludedShared) literals.delete(v);
+if (excludedShared.length) console.log(`ortak metin (gerçek uygulamada da var) taramadan çıkarıldı: ${excludedShared.length} → ${excludedShared.map((v) => JSON.stringify(v)).join(', ')}`);
 literals.add('lab-mg-1').add('lab-mg-5').add('Mini oyun denemesi');
 const escapeU = (s) => s.replace(/[^\x20-\x7e]/g, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
 const variants = (s) => [s, escapeU(s), escapeU(s).toUpperCase().replace(/\\U/g, '\\u')];

@@ -141,15 +141,49 @@ export interface Card {
   review?: Review;
 }
 
+/** ESKİ güven bildirimi (kayıt türü V1). Yeni cevaplarda toplanmaz; yalnızca eski kayıtları okumak için kalır. */
 export type Confidence = 'sure' | 'unsure' | 'guess';
 
-export interface ReviewRecord {
+/**
+ * Yeni cevaplarda kullanıcının isteğe bağlı bildirimi. `none` YALNIZCA "bildirim verilmedi" demektir;
+ * emin ya da kararsız olarak yorumlanmaz. `guess`: kullanıcı "Tahmin ettim" dedi.
+ */
+export type SelfReport = 'guess' | 'none';
+
+/** Zamanlama politikasının verdiği FSRS derecesi (Easy kullanılmaz). */
+export type PolicyGrade = 'Again' | 'Hard' | 'Good';
+
+/**
+ * Kayıt türü V1: eski kayıtlar. `recordVersion` alanı YOKTUR (eski kayıtlara hiçbir şey eklenmez) ve
+ * güven bildirimi zorunluydu. Anlamı korunarak okunur; yeniden yazılırken değiştirilmez.
+ */
+export interface ReviewRecordV1 {
+  recordVersion?: undefined;
   cardId: string;
   correct: boolean;
   confidence: Confidence;
   /** ISO zaman damgası */
   at: string;
 }
+
+/**
+ * Kayıt türü V2: yeni cevaplar. Politika sürümü, uygulanan derece ve kararı yeniden değerlendirmek için
+ * gereken girdiler (`correct`, `selfReport`, `optionCount`) birlikte saklanır.
+ * Bu kayıt, geçmişin eksiksiz yeniden oynatılabileceği anlamına GELMEZ (geçmiş sınırlıdır; bkz. HISTORY_LIMIT).
+ */
+export interface ReviewRecordV2 {
+  recordVersion: 2;
+  cardId: string;
+  correct: boolean;
+  selfReport: SelfReport;
+  /** Kartın seçenek sayısı (tahminle doğru bulma olasılığını değerlendirmek için bir girdi). */
+  optionCount: number;
+  /** ISO zaman damgası */
+  at: string;
+  policy: { version: string; grade: PolicyGrade };
+}
+
+export type ReviewRecord = ReviewRecordV1 | ReviewRecordV2;
 
 /**
  * Bir karar seçeneğinin klinik uygunluğu. "Doğru/yanlış" değil: gri alan vardır.

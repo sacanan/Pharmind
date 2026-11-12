@@ -1,5 +1,6 @@
-import { Rating, createEmptyCard, fsrs, type Grade } from 'ts-fsrs';
-import type { Card, Confidence, Progress, ReviewRecord } from './types';
+import { createEmptyCard, fsrs } from 'ts-fsrs';
+import { POLICY_VERSION, decideGrade, toFsrsGrade } from './policy';
+import type { Card, PolicyGrade, Progress, ReviewRecordV2, SelfReport } from './types';
 
 /**
  * Günlük oturum mantığı: kısa öğrenme adımları (dakikalar) kapalıdır, aralıklar gün bazlıdır.
@@ -8,50 +9,52 @@ import type { Card, Confidence, Progress, ReviewRecord } from './types';
  */
 const scheduler = fsrs({ request_retention: 0.9, enable_short_term: false });
 
-export const HISTORY_LIMIT = 500;
-
 /**
- * Cevap + güven seçimini FSRS puanına çevirir.
- *
- * - Yanlış cevap her zaman "Again" (güvenle yanlış yapmak ayrıca history'de görülebilir).
- * - Doğru ve emin: "Good".
- * - Doğru ama kararsız veya tahmin: "Hard"; bilgi henüz oturmamış.
- *
- * "Easy" V1'de kullanılmaz: hız ölçümü sonraki sürüme kalıyor.
+ * Geçmişte tutulan en fazla kayıt sayısı. UYARI: bu sınır yüzünden eski kayıtlar silinir; bu nedenle
+ * (politika sürümü kaydedilse bile) FSRS durumu geçmişten eksiksiz yeniden hesaplanamaz. Tam yeniden
+ * hesaplama ve saklama mimarisi ayrı bir karardır (bkz. docs/product-decisions.md).
  */
-export function gradeFor(correct: boolean, confidence: Confidence): Grade {
-  if (!correct) return Rating.Again;
-  return confidence === 'sure' ? Rating.Good : Rating.Hard;
-}
+export const HISTORY_LIMIT = 500;
 
 export function emptyProgress(): Progress {
   return { version: 1, cards: {}, history: [], completedDays: [], caseResults: {} };
 }
 
-/** Bir kartı cevaplanmış olarak işler ve yeni bir Progress döndürür (girdiyi değiştirmez). */
+/**
+ * Bir kartın FSRS durumunu verilen derece ile ilerletir; geçmişe kayıt EKLEMEZ. Derecenin nereden
+ * geldiği çağırana aittir (kart cevapları için `decideGrade`, vaka kararları için karar derecesi).
+ */
+export function scheduleCard(progress: Progress, card: Card, grade: PolicyGrade, now: Date): Progress {
+  const current = progress.cards[card.id] ?? createEmptyCard(now);
+  const when =
+    current.last_review && now.getTime() < current.last_review.getTime() ? current.last_review : now;
+  const { card: next } = scheduler.next(current, when, toFsrsGrade(grade));
+  return { ...progress, cards: { ...progress.cards, [card.id]: next } };
+}
+
+/**
+ * Bir kart cevabını işler ve yeni bir Progress döndürür (girdiyi değiştirmez). Derece deneysel politikadan
+ * gelir (bkz. policy.ts); yeni türdeki (V2) kayıt politika sürümünü, dereceyi ve girdileri taşır.
+ */
 export function reviewCard(
   progress: Progress,
   card: Card,
   correct: boolean,
-  confidence: Confidence,
+  selfReport: SelfReport,
   now: Date,
 ): Progress {
-  const current = progress.cards[card.id] ?? createEmptyCard(now);
-  // Telefonun saati geri alınırsa FSRS hata verir; son tekrar zamanından öncesine inmeyiz.
-  const when =
-    current.last_review && now.getTime() < current.last_review.getTime() ? current.last_review : now;
-  const { card: next } = scheduler.next(current, when, gradeFor(correct, confidence));
-  const record: ReviewRecord = {
+  const grade = decideGrade({ correct, selfReport });
+  const scheduled = scheduleCard(progress, card, grade, now);
+  const record: ReviewRecordV2 = {
+    recordVersion: 2,
     cardId: card.id,
     correct,
-    confidence,
+    selfReport,
+    optionCount: card.options.length,
     at: now.toISOString(),
+    policy: { version: POLICY_VERSION, grade },
   };
-  return {
-    ...progress,
-    cards: { ...progress.cards, [card.id]: next },
-    history: [...progress.history, record].slice(-HISTORY_LIMIT),
-  };
+  return { ...scheduled, history: [...progress.history, record].slice(-HISTORY_LIMIT) };
 }
 
 /** 0 ile 1 arası: kartın şu an hatırlanma olasılığı. Hiç görülmediyse 0. Tekrar sıralaması için. */
