@@ -1,19 +1,20 @@
-import type { Confidence, Progress, ReviewRecord } from './types';
+import { isLegacyConfidentError, isShakyRight, type AnswerLike } from './records';
+import type { Progress } from './types';
 import { dayKey } from './weekly';
 
 /**
  * Blister dizisindeki bir gözün durumu.
- * - correct: doğru ve emin
- * - shaky: doğru ama kararsız veya tahmin (bilgi henüz oturmamış)
+ * - correct: doğru (yeni kayıtlarda bildirim yoksa da; "emin" iddiası taşımaz. Eski kayıtlarda: doğru ve emin)
+ * - shaky: doğru ama kullanıcı "Tahmin ettim" dedi (eski kayıtlarda: kararsız veya tahmin)
  * - wrong: yanlış
  */
 export type CellState = 'pending' | 'current' | 'correct' | 'wrong' | 'shaky';
 
-type Answer = Pick<ReviewRecord, 'correct' | 'confidence'>;
+type Answer = AnswerLike;
 
 export function cellFor(answer: Answer): CellState {
   if (!answer.correct) return 'wrong';
-  return answer.confidence === 'sure' ? 'correct' : 'shaky';
+  return isShakyRight(answer) ? 'shaky' : 'correct';
 }
 
 /** Oturum sırasındaki gözler: cevaplananlar dolu, sıradaki işaretli, kalanlar boş. */
@@ -36,22 +37,24 @@ export function todaysCells(progress: Progress, now: Date, size: number): CellSt
 
 export interface SessionSummary {
   total: number;
-  /** Doğru cevap sayısı (kararsız doğrular dahil) */
+  /** Doğru cevap sayısı (tahmin işaretli doğrular dahil) */
   right: number;
   wrong: number;
-  /** Doğru ama emin olmadığı cevaplar */
+  /** Doğru ama "Tahmin ettim" işaretli cevaplar (eski kayıtlarda: emin olmayanlar) */
   shaky: number;
-  /** Emin olduğu halde yanlış yaptığı cevaplar: en değerli hata türü */
-  confidentErrors: number;
+  /**
+   * Emin olduğu halde yanlış yapılan cevaplar. YALNIZCA eski (V1) güven bildirimlerinden hesaplanır;
+   * yeni kayıtlarda güven bildirimi toplanmadığı için bu sayı yeni cevaplardan türetilmez.
+   */
+  legacyConfidentErrors: number;
 }
 
 export function summarize(results: Answer[]): SessionSummary {
-  const confidence = (c: Confidence) => results.filter((r) => r.confidence === c);
   return {
     total: results.length,
     right: results.filter((r) => r.correct).length,
     wrong: results.filter((r) => !r.correct).length,
-    shaky: results.filter((r) => r.correct && r.confidence !== 'sure').length,
-    confidentErrors: confidence('sure').filter((r) => !r.correct).length,
+    shaky: results.filter(isShakyRight).length,
+    legacyConfidentErrors: results.filter(isLegacyConfidentError).length,
   };
 }

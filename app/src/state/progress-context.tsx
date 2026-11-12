@@ -14,10 +14,15 @@ import { applyCase, applyFollowUp } from '../core/case';
 import { DAILY_SIZE, selectDaily } from '../core/daily';
 import { emptyProgress, reviewCard } from '../core/scheduling';
 import { loadProgress, saveProgress } from '../core/storage';
-import type { Card, CaseRun, Confidence, PatientCase, Progress, ReviewRecord } from '../core/types';
+import type { Card, CaseRun, PatientCase, Progress, SelfReport } from '../core/types';
 import { dayKey, markSessionComplete } from '../core/weekly';
 
-type SessionAnswer = Pick<ReviewRecord, 'cardId' | 'correct' | 'confidence'>;
+/** Oturum içinde tutulan cevap (yeni kayıt türünün alt kümesi). */
+interface SessionAnswer {
+  cardId: string;
+  correct: boolean;
+  selfReport: SelfReport;
+}
 
 export interface Session {
   /** Oturumun başladığı gün (yerel, YYYY-MM-DD); gün değişince eski oturum geçersiz sayılır. */
@@ -32,7 +37,11 @@ interface Store {
   progress: Progress;
   session: Session | null;
   startSession: () => void;
-  answer: (card: Card, correct: boolean, confidence: Confidence) => void;
+  /**
+   * Oturumdaki sıradaki kartın cevabını işler. Sıradaki kart dışındaki (örn. aynı kartın hızlı çift
+   * dokunuşuyla gelen ikinci) çağrılar yok sayılır: aynı cevap iki kez kaydedilmez.
+   */
+  answer: (card: Card, correct: boolean, selfReport: SelfReport) => void;
   /** Vakayı tamamlar: karar kalitesi ilgili kavramların mastery'sine işlenir. */
   completeCase: (c: PatientCase, run: CaseRun) => void;
   /** "Hasta geri geldi" kararını işler. */
@@ -105,12 +114,14 @@ export function ProgressProvider({ children, paused = false }: { children: React
    * geri bildirim ekranında uygulamadan çıkılsa bile gün tamamlanmış sayılır.
    */
   const answer = useCallback(
-    (card: Card, correct: boolean, confidence: Confidence) => {
+    (card: Card, correct: boolean, selfReport: SelfReport) => {
       const now = new Date();
-      let next = reviewCard(latest.current, card, correct, confidence, now);
       const current = sessionRef.current;
+      // Senkron kontrol (ref): iki hızlı dokunuş aynı render'da gelse bile ikincisi sıradaki kart olmaktan çıkmıştır.
+      if (current && current.cardIds[current.results.length] !== card.id) return;
+      let next = reviewCard(latest.current, card, correct, selfReport, now);
       const updated = current
-        ? { ...current, results: [...current.results, { cardId: card.id, correct, confidence }] }
+        ? { ...current, results: [...current.results, { cardId: card.id, correct, selfReport }] }
         : current;
       if (updated && updated.results.length >= updated.cardIds.length) {
         next = markSessionComplete(next, now);

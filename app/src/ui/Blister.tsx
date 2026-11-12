@@ -25,7 +25,7 @@ function describe(cells: CellState[]): string {
   const count = (s: CellState) => cells.filter((c) => c === s).length;
   const parts = [
     `${count('correct')} doğru`,
-    `${count('shaky')} kararsız doğru`,
+    `${count('shaky')} tahmin işaretli doğru`,
     `${count('wrong')} yanlış`,
     `${count('pending') + count('current')} bekliyor`,
   ];

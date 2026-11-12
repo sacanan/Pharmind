@@ -689,7 +689,7 @@ describe('validateReleaseLock', () => {
 describe('ilerleme geçmişi ile uyum (Progress ve mastery değişmeden)', () => {
   const pack = approvedPack();
   const oldCard = pack.cards[0];
-  const progress = reviewCard(emptyProgress(), oldCard, true, 'sure', NOW);
+  const progress = reviewCard(emptyProgress(), oldCard, true, 'none', NOW);
 
   it('TEHLİKE (kilidin önlediği durum): aynı kimlikle cevabı değişen kart eski ilerlemeyi devralır', () => {
     const changed: Card = { ...oldCard, correctIndex: 1 };
@@ -705,7 +705,7 @@ describe('ilerleme geçmişi ile uyum (Progress ve mastery değişmeden)', () =>
   });
 
   it('içerikten kalkan kimliğin yetim ilerleme kaydı mastery ve Daily 5 seçimini bozmaz', () => {
-    const orphaned = reviewCard(progress, { ...oldCard, id: 'eski-kart' }, true, 'sure', NOW);
+    const orphaned = reviewCard(progress, { ...oldCard, id: 'eski-kart' }, true, 'none', NOW);
     const cards = pack.cards.filter((c) => c.id !== 'syn-k-001');
     const map = masteryMap(pack.concepts, cards, orphaned, NOW);
     expect(map.every((m) => m.seenCount === 0 && m.mastery === 0)).toBe(true);

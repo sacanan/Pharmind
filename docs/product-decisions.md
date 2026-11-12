@@ -22,8 +22,8 @@ Bu belge geliştirme sürecinin **bağlayıcı ürün ilkelerini** kaydeder. Tek
 | Aşama | Konu | Durum |
 |---|---|---|
 | M0 | Teknik doğrulama | Tamamlandı (aşağıda) |
-| M1 | İlk oynanabilir prototip (izole, demo içerik) | Bu PR |
-| M2 | Güvenli öğrenme entegrasyonu: ayrı oturum durumları, isteğe bağlı güven, FSRS politikası, tek günlük tamamlanma, ayrı Temel/Derinleş mastery | Planlandı |
+| M1 | İlk oynanabilir prototip (izole, demo içerik) | Tamamlandı (PR #3; yalnızca web) |
+| M2 | Güvenli öğrenme entegrasyonu: ayrı oturum durumları, isteğe bağlı güven, FSRS politikası, tek günlük tamamlanma, ayrı Temel/Derinleş mastery | Sürüyor: M2-1 (isteğe bağlı "Tahmin ettim", kayıt türleri, politika v0) bu PR; diğer parçalar sonraki PR'lar |
 | M3 | Ana ekran ve keşif: Oyna / Keşfet / Ustalaş, magnezyum haritası | Planlandı |
 | M4 | Ödüller: XP, rozet, idempotency ve istismar önlemleri | Planlandı |
 | M5 | Bilimsel içerik entegrasyonu: yalnızca onaylı ContentPack hattından | Planlandı |
@@ -49,9 +49,34 @@ Bu belge geliştirme sürecinin **bağlayıcı ürün ilkelerini** kaydeder. Tek
 - `Card.level` henüz onaylanmadı. Seçenekler (alan / kimlikte kodlama / pakette eşleme tablosu / yapıdan türetme) M2'de açık teknik karar olarak değerlendirilecek. Alanın `coreHash` kapsamında olmaması, yayınlanmış kartın sessizce yeniden sınıflanmasına izin verir; bu nedenle karar release-lock ilk dolmadan önce verilmelidir.
 - `ALLOW_DEMO_CONTENT = true`: bugünkü üretim yolu demo kartları gösterir; gerçek içerik gelmeden önce kapatılmalıdır.
 
-## FSRS değerlendirme politikası (kanıtlanmış değildir)
+## M2-1: isteğe bağlı "Tahmin ettim", kayıt türleri, politika v0
 
-Güven bildirimi olmadan doğru/yanlış ve eşleştirme hatalarından `Hard/Good/Again` üretmenin güvenilir olduğu **kanıtlanmış kabul edilmez**. M2'de politika sürümlü, girdileriyle birlikte kaydedilen ve pilotta sonraki tekrar doğruluğuyla karşılaştırılan bir öneri olarak ele alınır. M1 prototipi FSRS'e hiçbir şey yazmaz.
+**Davranış değişiklikleri (gerçek oturum):** cevap tek dokunuşla verilir; zorunlu ikinci "ne kadar eminsin" adımı kalktı. Cevaptan önce isteğe bağlı "Tahmin ettim" işaretlenebilir ve yalnızca o kart için geçerlidir. Aynı kartın hızlı çift dokunuşu tek cevap sayılır (sağlayıcı yalnızca oturumdaki sıradaki kartı kabul eder).
+
+**Kayıt türleri (`Progress.history`):**
+- **V1 (eski):** `recordVersion` alanı yok; `confidence: 'sure' | 'unsure' | 'guess'` zorunlu. Okunurken ve yeniden yazılırken **değiştirilmez**; alan eklenmez, ona politika sürümü yazılmaz. Anlamı eskisi gibidir (doğru ve `sure` değil → kararsız doğru).
+- **V2 (yeni):** `recordVersion: 2`, `selfReport: 'guess' | 'none'`, `optionCount`, `policy: { version, grade }`. **`none` yalnızca "bildirim verilmedi" demektir**; emin veya kararsız olarak yorumlanmaz, `confidence` alanı hiç yazılmaz.
+- Depodan okurken geçersiz, tanınmayan sürümlü veya eksik alanlı kayıtlar atlanır (tahmin edilerek yorumlanmaz). `Progress.version` 1 kalır.
+
+**Politika v0 (`v0-experimental`, DENEYSEL):** yanlış → Again (tahmin işareti sonucu değiştirmez); doğru + tahmin işaretli → Hard; doğru + işaretsiz → Good; Easy yok. **Good, kullanıcının emin olduğu anlamına gelmez;** yalnızca zamanlama kararıdır. Politikanın öğrenme başarısını artırdığı **kanıtlanmış değildir**; pilotta sonraki tekrar doğruluğuyla karşılaştırılacaktır. Her V2 kayıt sürümü, uygulanan dereceyi ve girdileri (`correct`, `selfReport`, `optionCount`) taşır.
+
+**Geçmiş sınırı:** `HISTORY_LIMIT = 500` korunur. Kayıtta politika sürümü bulunması, geçmişin eksiksiz yeniden oynatılabileceği anlamına **gelmez**: eski kayıtlar silinir ve kartların FSRS durumu eski (güven tabanlı) ve yeni politikayla karışık hesaplanmıştır; geçmişten yeniden türetilemez. Tam yeniden hesaplama ve saklama mimarisi ayrı bir karardır (bu PR'da yok).
+
+**Özetler:** "emin olduğu halde yanlış" (`legacyConfidentErrors`) yalnızca eski V1 güven bildirimlerinden hesaplanır; yeni cevaplardan türetilmez ve oturum ekranında artık gösterilmez. Blister: ✓ doğru, ? doğru + tahmin işaretli (eski kayıtlarda kararsız/tahmin), ✕ yanlış.
+
+**Vaka (THINK) kararları değişmedi:** FSRS derecesi karar seçeneğinin içerik tanımlı derecesinden gelir (uygun → Good, kabul → Hard, uygun değil → Again); kart cevabı politikasına bağlı değildir ve geçmişe kayıt yazılmaz.
+
+### Sonraki M2 PR'ları için kararlar (kodlanmadı)
+
+- **`Card.level`:** Alan olarak ekleyip `coreHash`'e dahil etme yönü uygun bulundu; ancak alanın tek başına yeni öğrenme kimliği oluşturduğu varsayılmaz. Kimlik, yeniden sınıflandırma ve mevcut ilerleme politikası kodlamadan önce açıklanacak.
+- **Derinleş seti:** Beş kartlık set yalnızca adaydır. Beşten az uygun kart olduğunda ne olacağı tanımlanmadan sabitlenmez.
+- **Vakalar** şimdilik günlük hedefi tamamlamaz.
+- **Gece yarısı:** "Tamamlayan cevabın günü sayılır" kararı, mevcut kodun oturumu geçersiz sayma davranışı (`session.day === dayKey(now)` ana ekranda) incelenmeden uygulanmaz.
+- **Yarım oturumun kalıcılaştırılması** M2-1 dışındadır.
+
+## Eski: FSRS değerlendirme politikası notu (M0)
+
+Güven bildirimi olmadan doğru/yanlış ve eşleştirme hatalarından `Hard/Good/Again` üretmenin güvenilir olduğu **kanıtlanmış kabul edilmez**. Politika sürümlü, girdileriyle birlikte kaydedilen bir öneri olarak ele alınır; M1 prototipi FSRS'e hiçbir şey yazmaz.
 
 ## M1 prototipinin sınırları
 

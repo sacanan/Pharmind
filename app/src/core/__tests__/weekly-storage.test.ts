@@ -58,7 +58,7 @@ describe('depolama', () => {
 
   it('kaydet ve yükle: tarihler Date olarak geri gelir', async () => {
     const store = memoryStore();
-    let p = reviewCard(emptyProgress(), card, true, 'sure', THURSDAY);
+    let p = reviewCard(emptyProgress(), card, true, 'none', THURSDAY);
     p = markSessionComplete(p, THURSDAY);
     await saveProgress(store, p);
 
