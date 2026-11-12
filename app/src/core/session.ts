@@ -58,3 +58,44 @@ export function summarize(results: Answer[]): SessionSummary {
     legacyConfidentErrors: results.filter(isLegacyConfidentError).length,
   };
 }
+
+/** Ana ekranın ihtiyaç duyduğu, bellekteki oturum görünümü. */
+export interface SessionView {
+  cardIds: string[];
+  results: Answer[];
+  /** Oturumu tamamlayan cevabın yerel günü; yalnızca tamamlanmış oturumda vardır. */
+  completedDay?: string;
+}
+
+/**
+ * Devam eden oturum: tüm kartlar cevaplanmadıysa. Gün karşılaştırması YAPILMAZ; gece yarısını geçen
+ * yarım oturum, ana sayfaya dönülünce de devam eder (M2-2).
+ */
+export function isSessionActive(session: SessionView | null): boolean {
+  return !!session && session.results.length < session.cardIds.length;
+}
+
+/**
+ * Ana ekrandaki blister. `now` her değerlendirmede verilir; zamanlayıcı gerekmez.
+ * - Devam eden oturum: oturumun TÜM cevapları (bellekteki `results`), sıradaki göz boş görünür.
+ * - Bugün tamamlanmış oturum: oturumun tüm cevapları. Önceki gün tamamlanmış oturum bugüne taşınmaz.
+ * - Aksi halde bugün tamamlandıysa (örn. uygulama yeniden açıldı; oturum bellekte yok): yalnızca
+ *   bugüne ait geçmiş kayıtları (`todaysCells`). Yarım oturum kalıcı değildir.
+ * - Hiçbiri: boş gözler.
+ */
+export function homeCells(
+  session: SessionView | null,
+  progress: Progress,
+  now: Date,
+  size: number,
+  doneToday: boolean,
+): CellState[] {
+  if (session && isSessionActive(session)) {
+    return sessionCells(session.cardIds.length, session.results).map((c) => (c === 'current' ? 'pending' : c));
+  }
+  if (session && session.completedDay === dayKey(now)) {
+    return sessionCells(session.cardIds.length, session.results);
+  }
+  if (doneToday) return todaysCells(progress, now, size);
+  return Array<CellState>(size).fill('pending');
+}
