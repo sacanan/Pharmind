@@ -1,0 +1,30 @@
+name: web-build
+
+# Prototip bayrağı (EXPO_PUBLIC_LAB) derlenmiş çıktıda sınanır: bayrak açıkken prototip pakette,
+# kapalıyken YOK olmalı. Aynı önbellekle açık → kapalı → açık → kapalı sırası denenir.
+# `paths` süzgeci yoktur: her PR'da çalışır.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lab-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - run: npm ci
+
+      - name: Bayrak açık/kapalı web derlemeleri
+        run: npm run verify:lab-build

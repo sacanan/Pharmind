@@ -43,7 +43,12 @@ interface Store {
 
 const StoreContext = createContext<Store | null>(null);
 
-export function ProgressProvider({ children }: { children: ReactNode }) {
+/**
+ * `paused`: kök yerleşimde prototip (/lab) rotası açıkken true olur. Sağlayıcı yine de yerinde kalır
+ * (ağaç değişmediği için gezinme yığını ve süren oturum sıfırlanmaz), ama duraklatılmışken diskten
+ * okuma yapmaz. İlk yükleme, ilk kez duraklatılmamış olunduğunda bir kez yapılır.
+ */
+export function ProgressProvider({ children, paused = false }: { children: ReactNode; paused?: boolean }) {
   const [ready, setReady] = useState(false);
   const [progress, setProgress] = useState<Progress>(emptyProgress);
   const [session, setSession] = useState<Session | null>(null);
@@ -57,22 +62,29 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     setSession(next);
   }, []);
 
+  const mounted = useRef(true);
   useEffect(() => {
-    let alive = true;
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  const loadStarted = useRef(false);
+  useEffect(() => {
+    if (paused || loadStarted.current) return;
+    loadStarted.current = true;
     loadProgress(AsyncStorage)
       .then((loaded) => {
-        if (!alive) return;
+        if (!mounted.current) return;
         latest.current = loaded;
         setProgress(loaded);
       })
       .catch(() => {
         saveBlocked.current = true;
       })
-      .finally(() => alive && setReady(true));
-    return () => {
-      alive = false;
-    };
-  }, []);
+      .finally(() => mounted.current && setReady(true));
+  }, [paused]);
 
   const commit = useCallback((next: Progress) => {
     latest.current = next;
