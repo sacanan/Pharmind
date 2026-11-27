@@ -1,0 +1,70 @@
+name: Pharmind Claude Code
+
+# Yalnizca depo sahibi, mevcut ayni-depo PR'inda yoruma @claude yazarak baslatabilir.
+# Bu workflow sadece PR dalinda calisir; main dalina otomatik merge YOK.
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: read
+  id-token: write
+
+jobs:
+  claude:
+    if: >-
+      github.event.issue.pull_request != null &&
+      github.event.comment.user.login == 'sacanan' &&
+      startsWith(github.event.comment.body, '@claude')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    concurrency:
+      group: pharmind-claude-pr-${{ github.event.issue.number }}
+      cancel-in-progress: false
+    steps:
+      - name: Verify target is an open same-repository PR into main
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const number = context.issue.number;
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: number,
+            });
+            const expectedRepo = context.repo.owner + '/' + context.repo.repo;
+            if (pr.state !== 'open' || pr.base.ref !== 'main' ||
+                pr.head.repo?.full_name !== expectedRepo) {
+              core.setFailed('Only open, same-repository PRs targeting main are permitted.');
+            }
+
+      - name: Check Anthropic credentials (never print secrets)
+        env:
+          API_KEY_PRESENT: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+          OAUTH_PRESENT: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+        run: |
+          if [[ "$API_KEY_PRESENT" == "true" && "$OAUTH_PRESENT" == "true" ]]; then
+            echo "::error::Set only one Anthropic credential secret (API or OAuth)."
+            exit 1
+          fi
+          if [[ "$API_KEY_PRESENT" != "true" && "$OAUTH_PRESENT" != "true" ]]; then
+            echo "::error::Missing ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN GitHub Actions secret."
+            exit 1
+          fi
+
+      - name: Checkout trusted workflow repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude on the PR (no auto-merge)
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --max-turns 30
+            --append-system-prompt "Pharmind repository rules: work only on the triggering PR head branch, never merge any PR, never push to main, never bypass CI or release-lock, never mark medical content approved, and avoid modifying .github/workflows or secrets. Make focused changes with tests. If authorization or product decision is required, ask in the PR comment rather than assume. The human owner must approve every merge."
